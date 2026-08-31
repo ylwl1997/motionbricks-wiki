@@ -1,0 +1,2 @@
+# IndexNow key files must stay byte-exact (no trailing newline) — never touch line endings
+public/*.txt -text
