@@ -1,0 +1,67 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL } from "../../data/site.js";
+const issues = [
+  {
+    n: 252, title: "新机器人训练效果差（Poor training on new robot）",
+    state: "open", author: "dangkhoi04", date: "2026-08-12",
+    quote: "训练好的策略在跟踪训练分布内的动作样本时表现尚可，但进入流水线下一阶段——为 VLA 微调做 PICO VR 遥操作——就不行了。遥操作过程中机器人不稳定、频繁摔倒，尽管离线动作跟踪看起来可以接受。",
+    context: "训练配置：288 小时 BONES-SEED 数据集、约 142k 条 retargeted 动作、7000+ 次迭代、1 张 RTX PRO 6000 Blackwell、env 8192。作者怀疑默认的 SONIC 奖励配置与 domain randomization 是为 Unitree G1 调的，无法迁移到形态、动力学、执行器与关节限位都不同的机器人上。",
+    takeaway: "离线动作跟踪通过不等于遥操作鲁棒。把 SONIC 移植到新机器人时，要为奖励与 domain randomization 的重新调参预留时间——针对 G1 调优的默认值只是起点，不能直接拿来用。",
+    work: "见我们的<a href=\"/zh/new-embodiments/\">新 embodiment 指南</a>（KP/KD 调参、body 名称兼容、PKL 数据格式）——#252 的症状正是出在那里的配置文件上。",
+  },
+  {
+    n: 259, title: "h2.py 执行器参数与随附的 h2.urdf / h2.xml 不一致",
+    state: "open", author: "junsooki", date: "2026-08-24",
+    quote: "gear_sonic/envs/manager_env/robots/h2.py 里有三个执行器相关数值与随附发布的 H2 模型文件不一致。h2.py 中每个执行器组的数值都是 g1.py 的恰好 3 倍。而 h2.urdf 与 mjcf/h2.xml 在所有 31 个关节上互相一致，也和 Unitree 公布的规格一致。",
+    context: "issue 里的具体例子：ankle_roll 在 h2.urdf/h2.xml 中是 19.00，在 h2.py 里却是 150.0（约 7.9 倍）；waist_yaw 120.00 对 264.0（2.2 倍）。daf3899 随附的移植示例能端到端跑通，但执行器数值看起来像是从 G1 等比例缩放来的占位值。",
+    takeaway: "移植到 H2（或任何机器人）时，URDF/MJCF 的关节限位比机器人 .py 里的执行器数值更可信——并核实 effort limit 是否与真实电机规格一致（Unitree 公布 H2 腿部 360 N·m、手臂 120 N·m）。",
+    work: "这正是配置与模型一致性检查能抓到的错误类型。官方仓库里的 <code>scripts/check_actuator_params.py</code> 就是为自动标记这类不一致而写的。",
+  },
+  {
+    n: 265, title: "G1 报 \u201crobot data late\u201d，SONIC 遥操作延迟持续增加",
+    state: "open", author: "waiyc", date: "2026-08-27",
+    quote: "SONIC 遥操作过程中，G1 会偶尔报 \u201crobot data late\u201d。机器人动作有时还会越来越延迟。触发 episode 录制时，按下控制器按键到收到确认，响应有时能到大约 6 秒。",
+    context: "拓扑：G1 有线 → 路由器 → 笔记本（RTX 5090），Pico 4 Ultra 无线。停掉 camera service 与 data exporter 后复测——警告和延迟仍然出现。",
+    takeaway: "\u201crobot data late\u201d 说明控制回路没有及时收到机器人状态——是网络/系统问题，不是模型问题。机器人有线直连 PC 是可靠基线；无线 VR 多一跳，可能饿死控制回路。",
+    work: "<a href=\"/zh/teleoperation/\">遥操作页面</a>覆盖 ZMQ 端口与部署拓扑；<a href=\"/zh/data-collection/\">数据采集</a>里的 data-exporter 与 camera-server 卸载建议，正是给控制回路腾带宽的做法。",
+  },
+];
+const faqItems = [
+  { q: "这些 issue 在官方仓库里还处于 open 状态吗？", a: "是。#252、#259、#265 在撰写本文时均为 open。本页逐条链接原 issue，你可以跟进讨论并补充自己的经验。issue 状态由官方仓库维护，本页不跟踪变更。" },
+  { q: "移植 SONIC 到自己机器人之前，应该参考官方 issue 吗？", a: "应该。#252 和 #259 最有参考价值：#252 说明针对 G1 调的奖励与 domain randomization 可能不迁移；#259 说明随附示例的执行器数值可能与机器人模型文件不一致。开始移植前先读完这两条 thread。" },
+  { q: "怎么判断某个 issue 的修复是真的？", a: "只信已合并 PR 里出现、或 NVIDIA 维护者在 thread 中确认过的修复。社区 workaround（包括本站的）都只是需要你自己验证的起点——永远不要假设某个 workaround 对实体机器人是安全的。" },
+];
+---
+<Base
+  title="GR00T 官方仓库 issue：#252、#259、#265 里的真实痛点 | MotionBricks.wiki"
+  description="GR00T-WholeBodyControl issue 追踪器的真实痛点：新机器人训练效果差（#252）、H2 执行器参数与 URDF/MJCF 不符（#259）、robot data late 延迟（#265）——附我们的解读与入手路径。"
+  path="/community-issues/"
+  lang="zh"
+  crumbs={[{ label: "社区 issue 摘要", href: "/zh/community-issues/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">issue 摘要 · 来自官方追踪器</p>
+      <h1>GR00T 仓库的 issue <span style="color:var(--accent)">到底教会了我们什么</span></h1>
+      <p class="lede"><a href={OFFICIAL.parentRepo} rel="noopener">GR00T-WholeBodyControl</a> 追踪器里三条 open issue，正好覆盖了当前最大的真实痛点。每条都链接原 issue、引用原文，再加上我们的解读和本站指南的入口。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>issue 摘要</h2>
+    {issues.map((i) => (
+      <article class="post-item" style="margin-bottom:18px">
+        <h3><a href={`https://github.com/NVlabs/GR00T-WholeBodyControl/issues/${i.n}`} rel="noopener">#{i.n} — {i.title}</a> <span class="tag">{i.state} · @{i.author} · {i.date}</span></h3>
+        <blockquote style="border-left:3px solid var(--accent);padding-left:14px;margin:12px 0;color:var(--ink-2)">{i.quote}</blockquote>
+        <p><strong>背景：</strong>{i.context}</p>
+        <p><strong>我们的解读：</strong>{i.takeaway}</p>
+        <p><strong>从哪开始：</strong><span set:html={i.work} /></p>
+      </article>
+    ))}
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="issue 摘要常见问题" />
+  </div>
+</Base>

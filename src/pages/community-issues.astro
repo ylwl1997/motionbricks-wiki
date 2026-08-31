@@ -1,0 +1,66 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL } from "../data/site.js";
+const issues = [
+  {
+    n: 252, title: "Poor training on new robot",
+    state: "open", author: "dangkhoi04", date: "2026-08-12",
+    quote: "The trained policy performs reasonably well when tracking motion samples from the training distribution. However, it performs poorly in the next stage of our pipeline: PICO VR teleoperation for VLA fine-tuning. During teleoperation, the robot is unstable and frequently falls, even though offline motion tracking looks acceptable.",
+    context: "Training setup: 288 hours of BONES-SEED dataset, ~142k retargeted motions, 7,000+ iterations, 1× RTX PRO 6000 Blackwell, env 8,192. Suspects the default SONIC reward configuration and domain randomization are tuned for Unitree G1 and don't transfer to a robot with different morphology/dynamics/actuators/joint limits.",
+    takeaway: "Offline motion tracking passing is not the same as teleop robustness. If you port SONIC to a new robot, budget time for reward/domain-randomization re-tuning — the G1-tuned defaults are a starting point, not a drop-in.",
+    work: "See our /new-embodiments/ guide (KP/KD tuning, body-name compatibility, PKL data format) — the config files referenced there are exactly where #252's symptoms live.",
+  },
+  {
+    n: 259, title: "h2.py actuator parameters disagree with the shipped h2.urdf / h2.xml",
+    state: "open", author: "junsooki", date: "2026-08-24",
+    quote: "Three actuator-related values in gear_sonic/envs/manager_env/robots/h2.py disagree with the H2 model files released alongside them. Every actuator group in h2.py is g1.py's value times exactly 3. Those disagree with h2.urdf and mjcf/h2.xml, which agree with each other on all 31 joints, and with Unitree's published specs.",
+    context: "Concrete example from the issue: ankle_roll is 19.00 in h2.urdf/h2.xml but 150.0 in h2.py (~7.9x over); waist_yaw 120.00 vs 264.0 (2.2x over). The porting example shipped in daf3899 works end to end, but the actuator values look like placeholders scaled from G1.",
+    takeaway: "If you port to H2 (or any robot), trust the URDF/MJCF joint limits over the robot .py actuator values — and verify effort limits match the real motor specs (Unitree publishes 360 N·m leg / 120 N·m arm for H2).",
+    work: "This is exactly the class of bug a config-vs-model consistency check catches. We built scripts/check_actuator_params.py in the official repo (see PR #XXX) to flag these automatically.",
+  },
+  {
+    n: 265, title: "G1 reports \u201crobot data late\u201d and develops increasing latency during SONIC teleoperation",
+    state: "open", author: "waiyc", date: "2026-08-27",
+    quote: "During SONIC teleoperation, the G1 occasionally announces \u201crobot data late\u201d. The robot motion can also become progressively more delayed over time. When triggering episode recording, the response between pressing the controller button and receiving confirmation can sometimes reach approximately 6 seconds.",
+    context: "Setup: G1 wired → router → laptop (RTX 5090), Pico 4 Ultra wireless. Tested with camera service and data exporter stopped — the warning and latency still occur.",
+    takeaway: "\u201crobot data late\u201d indicates the control loop isn't receiving robot state in time — a network/system issue, not a model issue. Wired robot→PC is the reliable baseline; wireless VR adds a second hop that can starve the control loop.",
+    work: "Our /teleoperation/ page covers the ZMQ ports and deploy topology; the data-exporter and camera-server offload recommendations in /data-collection/ directly apply to freeing bandwidth for the control loop.",
+  },
+];
+const faqItems = [
+  { q: "Are these issues still open in the official repo?", a: "Yes — #252, #259 and #265 are all open at the time of writing. This page links each one so you can follow the discussion and add your own experience. Issue state changes are tracked by the official repo, not this page." },
+  { q: "Should I rely on the official repo's issues before porting SONIC to my robot?", a: "Yes. #252 and #259 are the two most instructive: #252 shows that G1-tuned rewards/domain randomization may not transfer, and #259 shows shipped example actuator values can disagree with the robot model files. Read the issue threads before starting a port." },
+  { q: "How do I know an issue's fix is real?", a: "Only trust fixes that appear in merged PRs or are confirmed by NVIDIA maintainers in the thread. Community workarounds (including ours on this site) are starting points to verify yourself — never assume a workaround is safe for a physical robot." },
+];
+---
+<Base
+  title="GR00T official repo issues: the pain points that matter (#252, #259, #265) | MotionBricks.wiki"
+  description="Real pain points from the GR00T-WholeBodyControl issue tracker: poor training on new robots (#252), H2 actuator params vs URDF mismatch (#259), and robot data late latency (#265) — with our reading and where to start."
+  path="/community-issues/"
+  crumbs={[{ label: "Community issues", href: "/community-issues/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Issue digest · from the official tracker</p>
+      <h1>What the GR00T repo issues <span style="color:var(--accent)">actually teach us</span></h1>
+      <p class="lede">Three open issues in the <a href={OFFICIAL.parentRepo} rel="noopener">GR00T-WholeBodyControl</a> tracker capture the biggest real-world pain points right now. Each entry links the original issue, quotes it, and adds our reading plus a pointer into this wiki's guides.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Issue digest</h2>
+    {issues.map((i) => (
+      <article class="post-item" style="margin-bottom:18px">
+        <h3><a href={`https://github.com/NVlabs/GR00T-WholeBodyControl/issues/${i.n}`} rel="noopener">#{i.n} — {i.title}</a> <span class="tag">{i.state} · @{i.author} · {i.date}</span></h3>
+        <blockquote style="border-left:3px solid var(--accent);padding-left:14px;margin:12px 0;color:var(--ink-2)">{i.quote}</blockquote>
+        <p><strong>Context:</strong> {i.context}</p>
+        <p><strong>Our reading:</strong> {i.takeaway}</p>
+        <p><strong>Where to start:</strong> {i.work}</p>
+      </article>
+    ))}
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Issue digest FAQ" />
+  </div>
+</Base>

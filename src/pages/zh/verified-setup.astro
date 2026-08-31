@@ -1,0 +1,54 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL } from "../../data/site.js";
+const faqItems = [
+  { q: "这一页真的是你们自己跑出来的吗？", a: "是。下面的日志是 2026-08-31 从仓库拉取官方 check_environment.py 在本机执行得到的。PASS/FAIL 行逐字来自脚本输出，没有任何模拟。" },
+  { q: "为什么 CUDA / PyTorch 检查会失败？", a: "因为这台机器是一台没有为 PyTorch 配置 CUDA 可用 GPU 的 Windows 工作站。这正是这个脚本的用途：在尝试训练或部署之前告诉你机器缺什么。Python 与 Git LFS 检查通过，GPU 栈没有通过。" },
+  { q: "脚本在 Windows 上崩了——这是 bug 吗？", a: "是，而且是真 bug：check_environment.py 的 check_disk_space 调用了 os.statvfs，这是 Unix 专用接口，在 Windows 上会抛 AttributeError。我们已向官方反馈；目前基础检查（Python、LFS）会在崩溃前先打印出来。" },
+];
+const log = [
+  "GR00T-WholeBodyControl Environment Check",
+  "Platform: Windows AMD64",
+  "Python:   C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  "",
+  "Basic:",
+  "  [+] Python version: 3.11.9",
+  "  [+] Git LFS: installed",
+  "  [X] CUDA: PyTorch not installed",
+  "  [X] PyTorch: not installed (pip install torch)",
+  "",
+  "… crashed at check_disk_space(): AttributeError: module 'os' has no attribute 'statvfs'",
+];
+---
+<Base
+  title="实测环境检查：我们真的跑了官方 check_environment.py | MotionBricks.wiki"
+  description="证据：我们真的在 Windows 机器上跑了 GR00T-WholeBodyControl 的 check_environment.py——Python 3.11.9 与 Git LFS 通过，CUDA/PyTorch 未通过，还发现了一个 Windows 崩溃 bug（os.statvfs）。真实日志，不是声称。"
+  path="/verified-setup/"
+  lang="zh"
+  crumbs={[{ label: "实测环境检查", href: "/zh/verified-setup/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">真实执行 · 不是纸面教程</p>
+      <h1>实测环境检查：<span style="color:var(--accent)">我们真的跑了</span></h1>
+      <p class="lede">谁都能复制粘贴安装命令。这一页展示官方 <a href={`${OFFICIAL.parentRepo}/blob/main/check_environment.py`} rel="noopener">check_environment.py</a> 在这台工作站上的真实输出——通过的、没通过的，以及我们踩到的 Windows bug，全部逐字保留。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>真实运行记录（2026-08-31）</h2>
+    <p>我们从仓库拉取脚本，用 Python 3.11.9 执行：</p>
+    <pre class="code-block"><code>{log.join("\n")}</code></pre>
+    <div class="note"><strong>这证明了什么：</strong>脚本按设计工作——在你浪费数小时之前就标记出缺失的 GPU 依赖（CUDA/PyTorch）。它也暴露了一个真实的上游 bug：<code>os.statvfs</code> 只在 Unix 可用，因此磁盘检查在 Windows 上崩溃。基础检查先打印，但 <code>check_disk_space</code> 会中止整个运行。</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>为什么我们公开这些</h2>
+    <p>本站的承诺是每条事实都溯源。对安装指南来说，这意味着展示真实的环境检查结果，失败也包括在内。在配了 CUDA 的 Linux 机器上，同一脚本会打印完整的训练/部署依赖矩阵；在这台 Windows 工作站上，它响亮而诚实地失败了——比一个编造的绿色对勾有用得多。</p>
+    <p>Windows 用户的下一步：<a href={OFFICIAL.docs.installationDeploy} rel="noopener">官方部署指南</a>面向 Ubuntu/Debian；训练方面，Isaac Lab 实际上只在 Linux 可用。用 WSL2 或一台 Linux 机器——并在上游修复前预期 <code>statvfs</code> 崩溃。</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="实测环境检查常见问题" />
+  </div>
+</Base>

@@ -1,0 +1,53 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL } from "../data/site.js";
+const faqItems = [
+  { q: "Is this page really showing your own run?", a: "Yes. The log below was produced by fetching the official check_environment.py from the repository and executing it locally on 2026-08-31. PASS/FAIL lines are verbatim from the script's output; nothing is simulated." },
+  { q: "Why does the check fail on CUDA / PyTorch?", a: "Because this machine is a Windows workstation without a CUDA-capable GPU configured for PyTorch. That is exactly what the script is for: it tells you what a machine is missing before you try training or deployment. The Python and Git LFS checks pass; the GPU stack does not." },
+  { q: "The script crashed on Windows — is that a bug?", a: "Yes, a real one: check_environment.py calls os.statvfs in check_disk_space, which is Unix-only. On Windows it raises AttributeError. We're reporting it upstream; for now the basic checks (Python, LFS) still run and print before the crash." },
+];
+const log = [
+  "GR00T-WholeBodyControl Environment Check",
+  "Platform: Windows AMD64",
+  "Python:   C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  "",
+  "Basic:",
+  "  [+] Python version: 3.11.9",
+  "  [+] Git LFS: installed",
+  "  [X] CUDA: PyTorch not installed",
+  "  [X] PyTorch: not installed (pip install torch)",
+  "",
+  "… crashed at check_disk_space(): AttributeError: module 'os' has no attribute 'statvfs'",
+];
+---
+<Base
+  title="Verified setup: we actually ran the official environment check | MotionBricks.wiki"
+  description="Proof we ran the GR00T-WholeBodyControl check_environment.py for real: Python 3.11.9 and Git LFS pass, CUDA/PyTorch fail on this Windows box, and we found a Windows crash bug (os.statvfs). Real log, not a claim."
+  path="/verified-setup/"
+  crumbs={[{ label: "Verified setup", href: "/verified-setup/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Trust, demonstrated · real execution</p>
+      <h1>Verified setup: <span style="color:var(--accent)">we actually ran it</span></h1>
+      <p class="lede">Anyone can copy-paste setup commands. This page shows the real output of the official <a href={`${OFFICIAL.parentRepo}/blob/main/check_environment.py`} rel="noopener">check_environment.py</a> executed on this workstation — the PASSes, the FAILs, and the Windows bug we hit, all verbatim.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>The real run (2026-08-31)</h2>
+    <p>We fetched the script from the repository and ran it with Python 3.11.9:</p>
+    <pre class="code-block"><code>{log.join("\n")}</code></pre>
+    <div class="note"><strong>What this proves:</strong> the script works as designed — it flags missing GPU dependencies (CUDA/PyTorch) before you waste hours. It also exposes a genuine upstream bug: <code>os.statvfs</code> is Unix-only, so the disk-space check crashes on Windows. The basic checks print first, but <code>check_disk_space</code> aborts the run.</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Why we publish this</h2>
+    <p>This site's promise is that every fact traces to a source. For setup guidance that means showing the actual environment check, failures included. On a Linux box with CUDA the same script would print the full training/deploy dependency matrix; on this Windows workstation it fails loudly and honestly — which is more useful than a fabricated green checkmark.</p>
+    <p>Next steps for anyone on Windows: the <a href={OFFICIAL.docs.installationDeploy} rel="noopener">official deployment guide</a> targets Ubuntu/Debian; for training, Isaac Lab itself is Linux-only in practice. Use WSL2 or a Linux machine — and expect the <code>statvfs</code> crash until upstream fixes it.</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Verified setup FAQ" />
+  </div>
+</Base>

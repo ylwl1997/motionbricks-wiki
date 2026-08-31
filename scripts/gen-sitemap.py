@@ -24,12 +24,14 @@ ZH = {"/zh/": "0.9", "/zh/setup/": "0.8", "/zh/ue5/": "0.7", "/zh/unity/": "0.7"
       "/zh/sonic-models/": "0.7", "/zh/gr00t-overview/": "0.7", "/zh/vla-workflow/": "0.7",
       "/zh/teleoperation/": "0.7", "/zh/motion-representation/": "0.6", "/zh/troubleshooting/": "0.7",
       "/zh/installation-deploy/": "0.7", "/zh/new-embodiments/": "0.6",
-      "/zh/data-collection/": "0.6", "/zh/sonic-vs-motionbricks/": "0.7"}
+      "/zh/data-collection/": "0.6", "/zh/sonic-vs-motionbricks/": "0.7",
+      "/zh/community-issues/": "0.6", "/zh/verified-setup/": "0.6"}
 # New GR00T-stack pages (EN) get explicit priorities too
 NEW_EN = {"/sonic-models/": "0.8", "/gr00t-overview/": "0.8", "/vla-workflow/": "0.8",
           "/teleoperation/": "0.8", "/motion-representation/": "0.7", "/troubleshooting/": "0.8",
           "/installation-deploy/": "0.8", "/new-embodiments/": "0.7",
-          "/data-collection/": "0.7", "/sonic-vs-motionbricks/": "0.8"}
+          "/data-collection/": "0.7", "/sonic-vs-motionbricks/": "0.8",
+          "/community-issues/": "0.7", "/verified-setup/": "0.7"}
 
 urls = []
 for dirpath, dirnames, filenames in os.walk(DIST):
