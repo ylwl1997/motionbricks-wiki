@@ -1,0 +1,59 @@
+---
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, RELATED } from "../../data/site.js";
+---
+<Base
+  title="MotionBricks 社区：讨论在哪发生、怎么贡献 | MotionBricks.wiki"
+  description="NVIDIA MotionBricks 去哪聊：官方联系邮箱 gear-wbc@nvidia.com、GitHub issues 与 discussions、诚实标注为第三方的 Reddit 搜索链接——外加如何向本站报错或贡献修正。"
+  path="/community/"
+  lang="zh"
+  crumbs={[{ label: "社区", href: "/zh/community/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">社区 · 不编造论坛，不借用权威</p>
+      <h1>和人一起<span style="color:var(--accent)">聊 MotionBricks</span></h1>
+      <p class="lede">这个项目还很年轻——公开预览 2026-04-27 才落地——所以「社区」主要指官方仓库和人们在别处开起的帖子。这里是诚实的版图：什么存在、谁在运营、本站不为哪些东西背书。</p>
+    </div>
+  </section>
+
+  <section class="block wrap" id="where">
+    <h2>讨论实际发生在哪</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>官方 NVIDIA 渠道</h3>
+        <p>MotionBricks README 为提问与反馈列了一个联系邮箱：<code>{OFFICIAL.contact}</code>。那是 NVIDIA 为这个项目设的官方地址——直接联系它，不要经过本站。</p>
+      </div>
+      <div class="card">
+        <h3>GitHub issues 与 discussions</h3>
+        <p>Bug、安装问题与功能请求应该放到公开的地方：<a href={OFFICIAL.parentRepo} rel="noopener">NVlabs/GR00T-WholeBodyControl</a>（MotionBricks 是 <code>motionbricks/</code> 子项目）。那里的 issue 最有可能得到构建它的人的回答。</p>
+      </div>
+      <div class="card">
+        <h3>项目页</h3>
+        <p><a href={OFFICIAL.projectPage} rel="noopener">nvlabs.github.io/motionbricks</a> 是规范的演示与论文枢纽——它的模板血统（Nerfies 风格页面）说明不了什么，内容才说明一切。</p>
+      </div>
+    </div>
+    <h3>Reddit、X 与其它平台</h3>
+    <p>在 Reddit 上搜「motionbricks」能找到社区讨论——但本站不监控、不核实、不背书任何具体帖子，也不列具体讨论串，因为那些会过时、会出错。想看当前的讨论，直接用搜索，并把它当作<strong>第三方</strong>内容：</p>
+    <ul>
+      <li>Reddit 搜索：<a href="https://www.reddit.com/search/?q=motionbricks" rel="noopener nofollow">reddit.com/search/?q=motionbricks</a>（第三方，与 NVIDIA 无关联）</li>
+    </ul>
+    <div class="note"><strong>为什么链接这么少？</strong> 社区帖子里流传最广的「事实」是个错误数字——官方来源写 15,000 FPS，帖子传 5,000（见<a href="/zh/">首页纠错</a>）。第三方讨论串是找<em>问题</em>的地方，不是找答案的地方。</div>
+  </section>
+
+  <section class="block wrap" id="contribute">
+    <h2>向本站贡献</h2>
+    <p>MotionBricks.wiki 是由一位编辑维护的非官方指南。要报告过期页面、死链，或与官方来源不符的事实，请发邮件到 <code>hello@motionbricks.wiki</code>。</p>
+    <div class="warn"><strong>写之前先读这条：</strong> <code>hello@motionbricks.wiki</code> 只是本站的联系地址。它<em>不是</em> NVIDIA 支持渠道，与 NVIDIA 没有任何关系——软件本身的问题请用 <code>{OFFICIAL.contact}</code> 或 GitHub。（与<a href="/zh/about/">关于页</a>同一条政策。）</div>
+    <p>处理最快的三类：能推翻本站某条说法的官方来源链接、带确切命令和报错文本的可复现安装失败、两份 README 里任何新的带日期条目。</p>
+  </section>
+
+  <section class="block wrap" id="ground-rules">
+    <h2>本站内容的守则（Ground rules）</h2>
+    <ol>
+      <li><strong>每条事实都带官方来源链接。</strong>项目页、README、论文、模型卡或 NVIDIA 托管的文件。没有来源，就没有页面。</li>
+      <li><strong>推测必须标明。</strong>任何关于未发布功能（Unity 支持、引擎插件、路线图窗口）的内容都标注为观点或估计，绝不当事实陈述。</li>
+      <li><strong>「官方支持」类的说法一律驳回。</strong>本站与 NVIDIA 无关联，绝不把自己或社区发现包装成 NVIDIA 背书。以官方声明口吻投稿的内容会被退回。</li>
+    </ol>
+    <p style="color:var(--ink-2)">当问题超出 MotionBricks 范围时值得知道的兄弟项目：机器人控制看<a href="/zh/gr00t-sonic/">GEAR-SONIC</a>，离线生成看<a href={RELATED.kimodoPage} rel="noopener">Kimodo</a>，训练数据看<a href={RELATED.bonesSeed} rel="noopener">BONES-SEED</a>。</p>
+  </section>
+</Base>

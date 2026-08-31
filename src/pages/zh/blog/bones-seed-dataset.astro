@@ -1,0 +1,43 @@
+---
+export const title = "下载 BONES-SEED：MotionBricks 35 万段剪辑背后的数据集 | MotionBricks.wiki";
+export const description = "MotionBricks 训练语料真正在哪：README 指向 bones.studio/datasets，Hugging Face 页有 142,220 段重定向到 G1 的剪辑（约 288 小时），以及发布的训练脚本没有它也能跑的原因。";
+const slug = "bones-seed-dataset";
+import Base from "../../../layouts/Base.astro";
+import { OFFICIAL, RELATED, GIFS } from "../../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`} lang="zh"
+  crumbs={[{ label: "新闻", href: "/zh/news/" }, { label: "BONES-SEED 数据集", href: `/zh/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">数据指南 · 训练语料</p>
+      <h1>BONES-SEED：<span style="color:var(--accent)">35 万段剪辑在哪</span></h1>
+      <p class="lede">每篇 MotionBricks 讲解都引用“超过 35 万段动作剪辑”，然后戛然而止。本帖跟着证据链走：README 指向哪个页面、数据集自己说自己装了什么、发布的训练脚本在有无该数据时分别怎么跑。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>三个页面，三种角色</h2>
+    <ul>
+      <li><strong>README 的指针。</strong><a href={OFFICIAL.repo} rel="noopener">MotionBricks README</a> 把下载动作数据集的地址指向 <a href={RELATED.bonesDatasets} rel="noopener">bones.studio/datasets</a>——Training 一节和 Dataset 一节各出现一次。Related Work 把语料描述为“350k production-grade mocap clips from real human actors and actresses”（35 万段来自真人演员的职业级动捕剪辑）。</li>
+      <li><strong>数据集页。</strong><a href={RELATED.bonesSeed} rel="noopener">Hugging Face 上的 BONES-SEED 卡片</a>才是语料细节所在：官方页计数为 <strong>142,220 段剪辑、约 288 小时</strong>——更大动捕集合里重定向到 G1 的那部分轨迹。每个子集装了什么，以卡片原文为准。</li>
+      <li><strong>本站的事实页。</strong><a href="/zh/">首页</a>把 35 万这个数字链回它来自的项目页原句，<a href="/zh/blog/what-350000-15000-actually-mean/">辟谣帖</a>则拆清哪个数字指什么。</li>
+    </ul>
+    <figure style="max-width:560px">
+      <img src={GIFS.bonesSeedTeaser} alt="BONES-SEED 数据集宣传图，出自 MotionBricks README Related Work 一节" loading="lazy" width="480" height="270" />
+      <figcaption>BONES-SEED 宣传图——托管在 NVIDIA 仓库，只链接不镜像。</figcaption>
+    </figure>
+    <div class="note">两个数字都真实、都出自官方页面；它们描述的是不同的计数。“350k”是 README 对动捕语料的概括；142,220 段、约 288 小时是 Hugging Face 卡片的盘点。别把它们平均成一个数。</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>它如何喂给训练——以及跳过它会怎样</h2>
+    <p>数据变成 MotionBricks 形状之前还有一步：<a href={RELATED.somaRetargeter} rel="noopener">SOMA Retargeter</a> 是基于 Newton 的求解器，把 SOMA 动捕转换到 G1 骨架上，产出机器人可用的轨迹。</p>
+    <p>然后，按 README 原意：发布的训练脚本（<code>train_vqvae.py</code>、<code>train_pose.py</code>、<code>train_root.py</code>）<strong>默认使用合成数据</strong>，这是故意的——让你不下载真实语料也能端到端验证整条管线。真实数据集是用来<strong>复现预训练权重</strong>的，不是让代码跑起来的。</p>
+    <p>看完<a href="/zh/setup/">安装指南</a>后的实际顺序：先跑一遍合成训练证明环境可用；等真的在意复现权重时，再从上面的页面拉 BONES-SEED；任何商业计划之前，先读数据集自己页面上的许可条款——本站不会转述你一分钟就能读完的内容。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>为什么语料对架构叙事重要</h2>
+    <p>可扩展性主张——一个潜在骨干覆盖 35 万段以上剪辑，而不是一堆模型——之所以有趣，正是因为数据够宽：行走、爬行、受伤步态、物体接触。README 里的 GIF 图库（<a href="/zh/styles/">风格页</a>上能看到几张）其实就是这种广度的抽样。有人问“35 万对动捕来说算大数吗”，更有用的回答是它相对什么算大：先前的单模型动作工作训练语料要小得多，这一点<a href={OFFICIAL.arxiv} rel="noopener">论文</a>在相关工作章节有讨论。</p>
+  </section>
+</Base>

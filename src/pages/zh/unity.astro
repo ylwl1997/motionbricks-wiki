@@ -1,0 +1,71 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, GIFS } from "../../data/site.js";
+const faqItems = [
+  { q: "MotionBricks 支持 Unity 吗？", a: "写这篇文章时，没有官方支持。已发布的 runtime 都是 Python 系：GR00T-WholeBodyControl 仓库里的交互式 MuJoCo G1 演示与训练代码，而公开展示跑在虚幻引擎 5 里。NVIDIA 没有发布任何 Unity 插件、包或示例，路线图也只宣布现有技术栈的更完整发布，没有 Unity 绑定。" },
+  { q: "那我还是想在 Unity 游戏里用 MotionBricks 动作，怎么办？", a: "把模型当作外部动作源。两条务实的桥接路径：（1）离线——在 Python 栈生成动画，导出曲线或可重定向片段，作为 AnimationClips 导入；（2）运行时——把模型包成一个小服务，通过 socket 推送位姿帧，用帧数据驱动 Unity 动画（Animator 或 job/burst 骨架写入器）。两者都是 DIY：传输、重定向和网络开销由你负责，NVIDIA 均不提供支持。" },
+  { q: "买 Enterprise 授权会有 Unity 官方支持吗？", a: "公开材料里任何档位都没有 Unity 支持。NVIDIA Open Model License 管的是权重使用，不是引擎集成服务。如果 Unity 路径对你的项目很重要，盯官方仓库的 release，别信第三方说法。" },
+];
+---
+<Base
+  title="MotionBricks 支持 Unity 吗？诚实的答案 | MotionBricks.wiki"
+  description="NVIDIA MotionBricks 没有官方 Unity 支持——runtime 是 MuJoCo（Python），演示是 UE5。这里给出 Unity 开发者现实可行的桥接路径，以及每条路径的成本。"
+  path="/unity/"
+  lang="zh"
+  crumbs={[{ label: "Unity", href: "/zh/unity/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">兼容性指南 · 不粉饰</p>
+      <h1>MotionBricks 与 Unity：<span style="color:var(--accent)">官方路径——目前没有</span></h1>
+      <p class="lede">如果你搜过 "does motion bricks work for unity"，诚实的答案并不在 NVIDIA 的公开材料里。本页直说这一点，然后给出你真正要自己搭的桥接选项——以及每条的代价。</p>
+      <p style="margin-top:20px"><span class="unofficial-tag">最后核对仓库：2026-04-27 预览发布 + 路线图</span></p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>目前官方存在的东西</h2>
+    <table>
+      <thead><tr><th>形态</th><th>状态</th><th>位置</th></tr></thead>
+      <tbody>
+        <tr><td>Python runtime + 交互式 <strong>MuJoCo G1 演示</strong></td><td>已发布（预览）</td><td><a href={OFFICIAL.repo} rel="noopener">GitHub 单仓库</a></td></tr>
+        <tr><td>合成 <strong>训练管线</strong>（VQVAE / pose / root）</td><td>已发布（预览）</td><td>同一仓库，<code>scripts/</code></td></tr>
+        <tr><td><strong>UE5 创作展示</strong></td><td>仅视频 + 论文；无插件</td><td><a href={OFFICIAL.projectPage} rel="noopener">项目页</a></td></tr>
+        <tr><td><strong>Unity 插件 / 包 / 示例</strong></td><td>不存在</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="warn"><strong>为什么需要本页：</strong>每个热门的 NVIDIA 模型都会冒出一批看起来像 Unity 集成的第三方仓库。NVIDIA 官方页面没有任何指向 Unity 包的链接。在官方仓库自己发布之前，请把这类说法当作无支持处理。</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>桥接选项，按工作量排序</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>1 · 离线烘焙</h3>
+        <p>用 Python 栈生成动作，导出为曲线或可重定向片段，作为 AnimationClips 导入。几小时的工作量；没有实时响应。适合过场动画和原型动画。</p>
+      </div>
+      <div class="card">
+        <h3>2 · 运行时桥接服务</h3>
+        <p>把推理包成本地服务，通过 socket 把位姿帧推进 Unity（Animator 或 burst 骨架写入器）。几天到几周；延迟预算和向你自己骨架的重定向由你负责。</p>
+      </div>
+      <div class="card">
+        <h3>3 · 等完整发布</h3>
+        <p>路线图承诺完整训练管线与 GR00T-WBC 机器人学嵌入（按 README，预览后约一个月）。引擎绑定仍未明确——盯仓库是免费的。</p>
+      </div>
+    </div>
+    <p>投入工程时间之前，MuJoCo 演示仍是体验 runtime 能力最好的方式——见<a href="/zh/setup/">安装指南</a>和<a href="/zh/g1-demo/">控制说明</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>模型不在乎什么</h2>
+    <p>MotionBricks 输出是关节级动作（根轨迹 + 位姿帧），本质上与引擎无关。上面每条桥接都只是管道工程，不是研究——这也正是没人发布官方 Unity 集成的原因：已发布的 runtime 面向机器人（G1），UE5 展示是内部制作实验。</p>
+    <figure style="max-width:560px">
+      <img src={GIFS.locoFreestyle} alt="MotionBricks 生成的自由风格动作混合" loading="lazy" width="480" height="270" />
+      <figcaption>任何桥接都要能在引擎里交付这么流畅的动作——上面的 GIF 来自官方 README 图库。</figcaption>
+    </figure>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Unity 常见问题" />
+  </div>
+</Base>

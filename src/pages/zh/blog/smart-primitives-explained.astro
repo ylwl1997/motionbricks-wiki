@@ -1,0 +1,47 @@
+---
+export const title = "Smart primitives 讲透：MotionBricks 名字里的另一半 | MotionBricks.wiki";
+export const description = "locomotion 用速度、朝向与风格三个输入；物体交互用骨干补全的 proxy keyframes；UE5 内一站式搭建。按 NVIDIA 官方材料讲清 smart primitives 是什么，结尾标注本站观点。";
+const slug = "smart-primitives-explained";
+import Base from "../../../layouts/Base.astro";
+import { OFFICIAL, GIFS, KEYBINDS_STYLE } from "../../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`} lang="zh"
+  crumbs={[{ label: "新闻", href: "/zh/news/" }, { label: "Smart primitives", href: `/zh/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">概念指南 · SIGGRAPH 2026</p>
+      <h1>Smart primitives：<span style="color:var(--accent)">MotionBricks 名字里的另一半</span></h1>
+      <p class="lede">论文标题把“模块化潜在生成模型”与“smart primitives”并列。骨干模型占据头条，但用户和工程师实际摸到的是 primitives。这一页按官方材料的描述讲清每个家族。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Locomotion：三个输入，无需按任务训练</h2>
+    <p>locomotion primitive 接收连续指令——速度、朝向、一个风格信号——由骨干模型渲染成全身动作。这里没有“每个组合一段剪辑”：你不是在选“前进-僵尸步”，而是在拨旋钮，模型负责合成。零样本组合就在这一步落到实际：加一种动作风味不需要为它单独训练模型。</p>
+    <p>交互演示把这件事变得可触摸。WASD 设置相对相机的方向与速度；每个风格键在同一 locomotion 流上叠加一种角色——<strong>发布版里共 11 个风格</strong>：</p>
+    <table>
+      <thead><tr><th>按键</th><th>风格</th></tr></thead>
+      <tbody>{KEYBINDS_STYLE.map(([k, s]) => <tr><td><span class="kbd">{k}</span></td><td>{s}</td></tr>)}</tbody>
+    </table>
+    <div class="gifgrid">
+      <figure><img src={GIFS.locoZombie} alt="僵尸步 locomotion 风格，由速度、朝向与风格输入实时生成" loading="lazy" width="480" height="270" /><figcaption>僵尸步——同一个 locomotion primitive，不同的风格输入。</figcaption></figure>
+      <figure><img src={GIFS.locoCrouchStrafing} alt="蹲伏侧移：方向与风格混合，无需手工编写过渡" loading="lazy" width="480" height="270" /><figcaption>蹲伏侧移——方向与风格混合，无手工过渡。</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>物体：由骨干补全的 proxy keyframes</h2>
+    <p>物体交互走另一条路。作者提供 <strong>proxy keyframes</strong>——对交互的粗略规定，比如手该碰到剑的哪一处、长凳相对跳跃落在哪里——由骨干模型合成周边动作：接近、接触、跟手。因为这些片段是生成的而不是回放的，重复运行会自然变化，而不是重放同一段烘焙镜头。官方 GIF 图库展示了这个家族：捡剑、跳过长凳、坐下、摔倒。</p>
+    <p>值得直说，因为<a href="/zh/ue5/">UE5 页面</a>每周都被问这个问题：底层没有碰撞求解器。接触行为被学习进动作里——这正是官方材料敢声称无需 foot-locking、无需 blending、无需碰撞检测、无需手工过渡的原因。如果你的项目需要物理仿真响应，这是动作生成器，不是物理引擎。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>搭建：在 UE5 内部端到端完成</h2>
+    <p>官方材料的第三条腿是搭建流程：NVIDIA 的 Smart Primitive Setup 一节描述了在 Unreal Engine 5 内部设置 primitives——把 proxy keyframes 放到场景物体上、不离开编辑器就把行为接好——2:40 的一镜到底演示就是这样组出来的。预览版没有附带公开的 UE5 插件，所以今天你可以在<a href={OFFICIAL.projectPage} rel="noopener">项目页</a>读到它，并通过<a href="/zh/setup/">Python 安装指南</a>跑起模型层。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>状态机之问（本站观点，已标注）</h2>
+    <p><em>观点，非官方：</em>把三个家族合起来读，它们勾勒出动画蓝图状态机之外的另一条路。与其在每对状态之间手工编写状态与过渡规则，不如暴露一个低维命令面，让一个训练好的模型占据整个空间——“混合图”从游戏工程搬进了权重文件。这个重述是我们自己的；论文自己的卖点是可扩展性与实时控制。跑一下演示，按 <span class="kbd">F</span> 在侧移中走进僵尸步，自己评判。全部按键列在<a href="/zh/g1-demo/">G1 演示页</a>。</p>
+  </section>
+</Base>

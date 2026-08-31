@@ -1,0 +1,81 @@
+---
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, GIFS, KEYBINDS_STYLE, KEYBIND_NOTE, KEY_DEFAULT } from "../../data/site.js";
+const singleStyles = [
+  { gif: GIFS.locoZombie, title: "僵尸步", key: "F —— 僵尸步", alt: "人形拖曳着僵尸步伐蹒跚前行，同时响应移动指令" },
+  { gif: GIFS.locoInjuredLeg, title: "伤腿", key: "T —— 受伤行走（图库名：伤腿）", alt: "人形一条腿承重跛行，行走时偏向受伤一侧" },
+  { gif: GIFS.locoInjuredTorso, title: "伤躯干", key: "T —— 受伤行走（图库名：伤躯干）", alt: "人形弓身护住躯干移动——伤躯干风格" },
+  { gif: GIFS.locoSkipping, title: "跳跃步", key: "README 键位表没有演示键——图库风格", alt: "人形以跳绳般的节奏跳跃前进——跳跃步风格 GIF" },
+  { gif: GIFS.locoStrafing, title: "侧移", key: "无演示键——通过 A / D 横向移动", alt: "人形面朝前方横向侧移不转身——侧移风格" },
+  { gif: GIFS.locoCrouchStrafing, title: "蹲伏侧移", key: "C 是蹲伏潜行；侧移本身没有演示键", alt: "人形低蹲横向滑行——蹲伏侧移风格" },
+];
+const mixtureStyles = [
+  { gif: GIFS.locoFreestyle, title: "自由风格", key: "移动中组合风格键", alt: "人形在一次连续奔跑中在多种动作风格间流动——自由风格混合" },
+  { gif: GIFS.locoIdleWalkJogRun, title: "Idle · Walk · Jog · Run", key: "无风格键——默认移动，速度变化", alt: "同一个人形随速度指令变化在待机、行走、慢跑与奔跑间过渡" },
+];
+---
+<Base
+  title="MotionBricks 风格库：11 个风格键位全表 + 官方 GIF | MotionBricks.wiki"
+  description="MotionBricks 的全部移动风格——僵尸步、受伤、跳跃步、侧移、蹲伏、爬行——每个都有确切演示键位、官方 GIF，以及滑冰与爬行限制的诚实说明。"
+  path="/styles/"
+  lang="zh"
+  crumbs={[{ label: "风格库", href: "/zh/styles/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">参考 · 键位逐字来自 README</p>
+      <h1>MotionBricks 风格库，<span style="color:var(--accent)">逐键配 GIF</span></h1>
+      <p class="lede">十一个风格键，一个模型。按住风格键、用 WASD 转向，同一个骨干实时重新生成你的步态——这就是移动图元的"风格"通道（见<a href="/zh/architecture/">智能图元工作原理</a>）。要亲手试需要先装好环境：从<a href="/zh/setup/">安装</a>和<a href="/zh/g1-demo/">演示控制</a>开始。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>全部 11 个风格键位</h2>
+    <table>
+      <thead><tr><th>按键</th><th>风格</th></tr></thead>
+      <tbody>{KEYBINDS_STYLE.map(([k, a]) => <tr><td><span class="kbd">{k}</span></td><td>{a}</td></tr>)}</tbody>
+    </table>
+    <p>{KEY_DEFAULT}</p>
+    <div class="note"><strong>官方限制：</strong>{KEYBIND_NOTE}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>单一风格</h2>
+    <p>项目页把这组归为"由单个智能图元提示零样本生成的不同风格化移动——受伤、僵尸、跳跃步、侧移"：</p>
+    <div class="gifgrid">
+      {singleStyles.map((s) => (
+        <figure>
+          <img src={s.gif} alt={s.alt} loading="lazy" width="640" height="360" />
+          <figcaption><strong>{s.title}</strong> —— 官方图库 GIF，由 NVIDIA 托管。演示键：<span class="kbd">{s.key}</span></figcaption>
+        </figure>
+      ))}
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>风格混合</h2>
+    <p>"速度、方向与步态的连续运行时过渡——由用户指令实时拨动"（项目页）。这就是无混合主张显形的地方：过渡是生成的，不是交叉淡化的：</p>
+    <div class="gifgrid">
+      {mixtureStyles.map((s) => (
+        <figure>
+          <img src={s.gif} alt={s.alt} loading="lazy" width="640" height="360" />
+          <figcaption><strong>{s.title}</strong> —— 官方图库 GIF，由 NVIDIA 托管。</figcaption>
+        </figure>
+      ))}
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>在找滑冰风格？诚实的答案在这里</h2>
+    <p><strong>预览版里没有滑冰风格。</strong>README 的 11 键风格表没有溜冰，项目页图库也没有；本指南不会为了凑搜索词把无关按键硬安上去。</p>
+    <p>最接近的已发布风格是<strong>跳跃步</strong>——上面那张跳绳节奏的 GIF 是现有集合里最接近滑行、弹跳步态的东西（跳跃步本身在演示键位表里没有字母键；它出现在官方图库中）。如果滑冰式步态对你的项目重要，现实选项是：跟<a href="/zh/news/">完整发布</a>等新风格，或用<a href={OFFICIAL.customDatasetDocs} rel="noopener">自定义数据集文档</a>和<a href="/zh/training/">训练管线</a>在自有数据上训练。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>亲手试试这些风格</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/zh/g1-demo/">演示控制</a></h3><p>启动命令、相机相对移动，以及按键没反应时怎么办。</p></div>
+      <div class="card"><h3><a href="/zh/setup/">安装指南</a></h3><p>克隆、LFS 拉取、checkpoint——任何风格键的前提。</p></div>
+      <div class="card"><h3><a href="/zh/assets/">官方素材</a></h3><p>完整 GIF 图库与所有官方源链接的索引。</p></div>
+    </div>
+  </section>
+</Base>

@@ -4,6 +4,7 @@ Unofficial community guide to **NVIDIA MotionBricks** (SIGGRAPH 2026 real-time m
 
 - Live: https://motionbricks.wiki (pages.dev fallback: https://motionbricks-wiki.pages.dev)
 - Not affiliated with, endorsed by, or sponsored by NVIDIA. MotionBricks™ and NVIDIA® are trademarks of NVIDIA Corporation.
+- Languages: English (full), 中文 (full mirror under /zh/), Español (summary /es/), 日本語 (summary /ja/) — dropdown switcher in the header.
 
 ## Facts & guardrails
 - Every number/command lives in `src/data/site.js`, sourced from the official project page, the MotionBricks README, the GR00T-WholeBodyControl README, and arXiv:2604.24833. Do not invent facts in page files.

@@ -1,0 +1,50 @@
+---
+export const title = "MotionBricks SIGGRAPH 2026 论文：每条官方声明，逐一附链接 | MotionBricks.wiki";
+export const description = "《MotionBricks: Scalable Real-Time Motions with Modular Latent Generative Model and Smart Primitives》论文阅读卡：ACM TOG / SIGGRAPH 2026、DOI、arXiv 2604.24833、PDF 直链、16 位作者，以及数字到底声称了什么。";
+const slug = "motionbricks-at-siggraph-2026";
+import Base from "../../../layouts/Base.astro";
+import { OFFICIAL, GIFS } from "../../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`} lang="zh"
+  crumbs={[{ label: "新闻", href: "/zh/news/" }, { label: "SIGGRAPH 2026 论文", href: `/zh/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">论文卡 · SIGGRAPH 2026</p>
+      <h1>MotionBricks 论文，<span style="color:var(--accent)">逐字细读</span></h1>
+      <p class="lede">“MotionBricks: Scalable Real-Time Motions with Modular Latent Generative Model and Smart Primitives”——社区里流传的每个数字背后的那份文档。下面是它的标识、作者，以及它实际声称内容的清单。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>去哪找它</h2>
+    <ul>
+      <li>发表于 ACM Transactions on Graphics，对应 <strong>SIGGRAPH 2026</strong>；DOI：<a href={OFFICIAL.doi} rel="noopener">10.1145/3811334</a></li>
+      <li>arXiv 预印本：<a href={OFFICIAL.arxiv} rel="noopener">arXiv:2604.24833</a>（cs.RO）</li>
+      <li>NVIDIA GEAR 实验室官方 PDF：<a href={OFFICIAL.paperPdf} rel="noopener">motionbricks_siggraph_2026.pdf</a></li>
+      <li>带演示的项目页：<a href={OFFICIAL.projectPage} rel="noopener">nvlabs.github.io/motionbricks</a></li>
+    </ul>
+    <p>作者名单共十六位，第一作者 Tingwu Wang 在 <a href={OFFICIAL.arxiv} rel="noopener">arXiv 摘要页</a>上同时被列为通讯作者。仓库引用块里的 bibtex key（<code>wang2026motionbricksscalablerealtimemotions</code>）与之一致。引用时引论文，别引截图。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>作者们声称了什么——逐条列出</h2>
+    <ul>
+      <li><strong>15,000 FPS 生成吞吐、2 ms 延迟</strong>，官方项目页原文如此：<em>“MotionBricks achieves 15000 FPS and 2 ms latency covering over 350,000 motion skills by a single neural backbone.”</em></li>
+      <li><strong>一个骨干覆盖超过 35 万段动作剪辑</strong>——模块化潜在生成模型（VQVAE 分词器加 pose 与 root 模型），不是按任务堆网络。</li>
+      <li><strong>零样本合成</strong>——动作从训练好的潜在空间组合而来，每个新指令组合无需按任务单独训练。</li>
+      <li><strong>Smart primitives</strong> 作为控制面：locomotion 由速度、朝向与风格输入驱动；物体交互由骨干补全的 proxy keyframes 驱动。</li>
+      <li>官方演示材料称运行时<strong>无需 foot-locking、无需 blending、无需碰撞检测、无需手工编写过渡</strong>。</li>
+      <li><strong>“第一”类说法是作者自评。</strong>项目页把 UE5 规模演示描述为，据作者所知，首个同时达到该质量、可控性、复杂度与完整度的神经模型。请把这个限定语当成声明的一部分。</li>
+    </ul>
+    <figure style="max-width:560px">
+      <img src={GIFS.teaserAnimation} alt="MotionBricks 动画宣传图，出自官方 README GIF 图库" loading="lazy" width="640" height="360" />
+      <figcaption>README 图库里的动画宣传图——论文会逐帧讲到这些画面。</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>论文与代码的关系</h2>
+    <p>2026-04-27 的公开版本是<strong>预览版</strong>：交互式 MuJoCo 演示、预训练权重、合成训练代码。README 的路线图承诺完整管线——模型嵌入 GR00T Whole-Body Control 机器人学框架——大约在预览发布一个月后。如果审稿人问“能复现表 N 吗”，今天诚实的答案写在仓库 News 一节，直接链接过去比猜强。</p>
+    <p>还想拿数字对照炒作？<a href="/zh/blog/what-350000-15000-actually-mean/">350,000 与 15,000 辟谣帖</a>覆盖了流传最广的两个误读。要在本地跑起论文背后的系统，从<a href="/zh/setup/">安装指南</a>和<a href="/zh/">首页</a>对框架的说明开始。</p>
+  </section>
+</Base>

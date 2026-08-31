@@ -1,0 +1,54 @@
+---
+export const title = "MotionBricks 帖子里 350,000 和 15,000 到底指什么 | MotionBricks.wiki";
+export const description = "两个病毒式数字老被误读：15,000 FPS 是合成吞吐不是刷新率，350,000 是剪辑数量不是数据集名。加上“5,000 FPS”的复制粘贴错误。官方一句话能同时拆穿三处误读。";
+const slug = "what-350000-15000-actually-mean";
+import Base from "../../../layouts/Base.astro";
+import { OFFICIAL, GIFS, CORRECTION_5K, CORRECTION_350K_15K, HEADLINE_STATS } from "../../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`} lang="zh"
+  crumbs={[{ label: "新闻", href: "/zh/news/" }, { label: "350K / 15K 解码", href: `/zh/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">辟谣 · 病毒式数字</p>
+      <h1>350,000 和 15,000 <span style="color:var(--accent)">到底指什么</span></h1>
+      <p class="lede">MotionBricks 的讨论靠两个数字活着，而多数帖子把它们说错了。权威引用只有一句话。这一页其余内容都是对这句话的拆解。</p>
+      <p class="warn" style="margin-top:18px">{CORRECTION_5K}</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>一切源头的那一句话</h2>
+    <div class="note" style="font-size:1.05rem"><em>“MotionBricks achieves 15000 FPS and 2 ms latency covering over 350,000 motion skills by a single neural backbone.”</em>——官方项目页，<a href={OFFICIAL.projectPage} rel="noopener">nvlabs.github.io/motionbricks</a></div>
+    <p>主谓宾。一个模型，生成动作，很快，覆盖一个大剪辑语料。每个正确读法都是对这句话的解析；每个病毒式误读都丢掉了其中一块。</p>
+    <div class="stats">
+      {HEADLINE_STATS.map((s) => (
+        <div class="stat"><span class="v">{s.v}</span><span class="u">{s.unit}</span><div class="n">{s.note}</div></div>
+      ))}
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>15,000 FPS：它在数什么</h2>
+    <p>{CORRECTION_350K_15K}</p>
+    <p>拆开讲：这里的 FPS 指模型<em>每秒钟墙钟时间生成的动作帧数</em>，不是显示器显示的帧率。由 MotionBricks 驱动的 G1 人形不会以 15,000 Hz 运行——没有东西以这个速率渲染。这个数字衡量的是合成余量：生成器比消费它的 50 Hz 级控制环和 30–60 fps 显示器快多少——这正是单块 CUDA GPU 上交互式零样本控制可行的原因。配套数字 2 ms 延迟，同样出自官方项目页。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>350,000：它在数什么</h2>
+    <p>同样来自上面的更正：35 万以上是训练语料里的<strong>动作剪辑数量</strong>——也就是 README 描述为职业级真人动捕的<a href="/zh/blog/bones-seed-dataset/">BONES-SEED 集合</a>——不是某个可以用浏览器打开的<strong>数据集的名字或大小</strong>，不是参数量，也不是某个锁定菜单里的技能数。“Over 350,000 motion skills by a single neural backbone”声称的是一个模型<em>覆盖</em>了这份语料——这正是<a href={OFFICIAL.arxiv} rel="noopener">SIGGRAPH 2026 论文</a>花掉整个架构章节去论证的可扩展性论点。</p>
+    <figure style="max-width:560px">
+      <img src={GIFS.interactiveDemo} alt="交互演示录屏：G1 人形由键盘指令实时驱动" loading="lazy" width="480" height="270" />
+      <figcaption>消费侧：交互控制以键盘速度运行，不是 15,000 Hz——FPS 数字描述的是它背后的生成器。</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>如何引用而不重复炒作</h2>
+    <ul>
+      <li>引用完整句子（或链接它），而不是裸数字；脱离语境的“15,000 FPS！”正是误读的起点——包括<a href="/zh/">本站首页</a>已标记的幽灵“5,000 FPS”。</li>
+      <li>把吞吐与延迟当作两个独立声明：每秒帧数不是每帧毫秒数，官方页面对两个数字都给了，是有原因的。</li>
+      <li>引用任何其他流传的数字前——参数量、基准分数——先查它是否出现在<a href={OFFICIAL.paperPdf} rel="noopener">论文</a>或 README 里。如果只出现在某个回帖里，它大概就是在回帖里被编出来的。</li>
+    </ul>
+    <p>然后自己去量这个声明：<a href="/zh/setup/">安装指南</a>能跑起交互演示，<a href="/zh/g1-demo/">G1 控制页</a>列出每个按键。2 毫秒很难看见，但按 <span class="kbd">F</span> 在步态中零样本切换风格，一眼就能看见。</p>
+  </section>
+</Base>

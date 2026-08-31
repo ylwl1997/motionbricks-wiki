@@ -1,0 +1,140 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, RELATED, GIFS, PROJ_IMAGES } from "../../data/site.js";
+
+// 官方 MotionBricks GIF 图库的完整索引，分组与 README「Results」一节完全一致。
+// 文件名为父仓库 motionbricks/assets/gifs/ 下的真实路径；逐文件大小未列出，
+// 因为 README 只说它们是静音约 10 秒循环——绝不臆造字节数。
+const groups = [
+  {
+    id: "teasers",
+    title: "片头展示（Teasers）",
+    intro: "README Results 一节的领头两个循环——动画与机器人并排。",
+    items: [
+      { src: GIFS.teaserAnimation, file: "teaser_animation.gif", alt: "MotionBricks 动画片头：风格化角色跨多种风格实时生成", title: "动画片头", key: null },
+      { src: GIFS.teaserRobotics, file: "teaser_robotics.gif", alt: "MotionBricks 机器人片头：Unitree G1 人形机器人执行生成的全身动作", title: "机器人片头", key: null },
+    ],
+  },
+  {
+    id: "loco-single",
+    title: "智能移动——单一风格",
+    intro: "一个原语、一种行为。每个循环约十秒且静音；同样的风格可以在交互式演示里玩到（有键位的地方已标注）。",
+    items: [
+      { src: GIFS.locoZombie, file: "loco_zombie.gif", alt: "G1 人形机器人以 MotionBricks 生成的僵尸步风格蹒跚行走", title: "僵尸步", key: "F" },
+      { src: GIFS.locoInjuredLeg, file: "loco_injured_leg.gif", alt: "人形机器人伤腿跛行，零样本生成", title: "伤腿", key: "T" },
+      { src: GIFS.locoInjuredTorso, file: "loco_injured_torso.gif", alt: "人形机器人以弓背、伤躯干风格移动", title: "伤躯干", key: null },
+      { src: GIFS.locoSkipping, file: "loco_skipping.gif", alt: "角色向前跳跃步，实时生成", title: "跳跃步", key: null },
+      { src: GIFS.locoStrafing, file: "loco_strafing.gif", alt: "角色面朝前方横向侧移", title: "侧移", key: null },
+      { src: GIFS.locoCrouchStrafing, file: "loco_crouch_strafing.gif", alt: "角色以蹲伏潜行姿态横向侧移", title: "蹲伏侧移", key: "C" },
+    ],
+  },
+  {
+    id: "loco-mixture",
+    title: "智能移动——风格混合",
+    intro: "多个原语实时组合——零样本混合主张的现场演示。",
+    items: [
+      { src: GIFS.locoFreestyle, file: "loco_freestyle.gif", alt: "角色自由混搭移动风格，看不出混合接缝", title: "自由式", key: null },
+      { src: GIFS.locoIdleWalkJogRun, file: "loco_idle_walk_jog_run.gif", alt: "待机到走、慢跑、跑的速度阶梯，由同一个模型生成", title: "待机 · 走 · 慢跑 · 跑", key: null },
+    ],
+  },
+  {
+    id: "objects",
+    title: "智能物体（Smart objects）",
+    intro: "移动加接触：捡东西、摔倒恢复、跨过障碍、坐下。",
+    items: [
+      { src: GIFS.objPickupSword, file: "obj_pickup_sword.gif", alt: "角色弯腰从地上捡起一把剑", title: "捡剑", key: null },
+      { src: GIFS.objFalling, file: "obj_falling.gif", alt: "角色摔倒并触地反应", title: "摔倒", key: null },
+      { src: GIFS.objJumpBench, file: "obj_jump_bench.gif", alt: "角色翻越公园长椅", title: "翻越长椅", key: null },
+      { src: GIFS.objSitting, file: "obj_sitting.gif", alt: "角色在长椅上坐下", title: "坐下", key: null },
+      { src: GIFS.objInteractiveAuthoring, file: "obj_interactive_authoring.gif", alt: "交互式创作：用户实时放置并触发物体交互", title: "交互式创作", key: null },
+    ],
+  },
+  {
+    id: "related",
+    title: "相关工作的片头（Related work teasers）",
+    intro: "README Related Work 一节点名的四个兄弟项目。它们不是 MotionBricks 本身，但与它共享仓库和 GR00T 故事。",
+    items: [
+      { src: GIFS.kimodoTeaser, file: "kimodo_teaser.gif", alt: "Kimodo 片头：离线动作生成结果", title: "Kimodo", key: null, link: RELATED.kimodoPage },
+      { src: GIFS.sonicTeaser, file: "sonic_teaser.gif", alt: "GEAR-SONIC 片头：G1 机器人上的全身控制", title: "GEAR-SONIC", key: null, link: RELATED.sonicPage },
+      { src: GIFS.bonesSeedTeaser, file: "bones_seed_teaser.gif", alt: "BONES-SEED 数据集片头：训练语料中的动捕剪辑", title: "BONES-SEED 数据集", key: null, link: RELATED.bonesSeed },
+      { src: GIFS.somaRetargeterTeaser, file: "soma_retargeter_teaser.gif", alt: "SOMA Retargeter 片头：动作捕捉重定向到 G1 骨骼", title: "SOMA Retargeter", key: null, link: RELATED.somaRetargeter },
+    ],
+  },
+];
+
+// interactive_demo.gif 在同一图库文件夹里，但不在 README 的 Results 之下——
+// 它演示的是 demo 一节。这里如实单列。
+const faqItems = [
+  { q: "官方的 MotionBricks icon 或 logo 在哪里？", a: "NVIDIA 没有单独发布 icon 文件。官方项目页（nvlabs.github.io/motionbricks）上的 README badge 图与页头视觉是规范的品牌素材，总览静帧 teaser_image_motionbricks.jpg 也托管在该项目页上。本站链接到它们，不重新托管。" },
+  { q: "官方 MotionBricks GIF 托管在哪里？", a: "在 NVlabs/GR00T-WholeBodyControl GitHub 仓库的 motionbricks/assets/gifs/ 下，由 Git LFS 跟踪。可播放的副本从 media.githubusercontent.com/media/... 提供——同一路径的 raw.githubusercontent.com URL 会返回约 1 KB 的 LFS 指针文件，而不是图片。本页所有图库图片都直接嵌入 media 域名。" },
+  { q: "怎么下载 4K MotionBricks 演示视频？", a: "完整 4K 运行时演示（约 1.2 GB，单个 .mp4）由 NVIDIA 托管在 research.nvidia.com，本页直接给出链接。SIGGRAPH 2026 论文 PDF 从<a href=\"https://nvlabs.github.io/motionbricks/\" rel=\"noopener\">项目页</a>链接。从 NVIDIA 的链接下载不需要账号；本站不镜像任何东西。" },
+];
+---
+<Base
+  title="MotionBricks 官方素材索引：全部 GIF、icon 与托管位置 | MotionBricks.wiki"
+  description="NVIDIA MotionBricks 官方 GIF 图库完整索引（片头、智能移动、智能物体、相关工作），加总览图与 4K 演示视频——以及想找可用 motionbricks icon 或 render 素材时必知的 Git LFS media.githubusercontent 技巧。"
+  path="/assets/"
+  lang="zh"
+  crumbs={[{ label: "官方素材", href: "/zh/assets/" }]}
+  ogImage={PROJ_IMAGES.overview}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">素材索引 · 来源为官方仓库与项目页</p>
+      <h1>全部官方 MotionBricks <span style="color:var(--accent)">GIF</span>，一处收齐</h1>
+      <p class="lede">README 图库，按 NVIDIA 自己的分组方式：片头、单一移动风格、风格混合、智能物体，以及相关工作循环。每张图都链接回 NVIDIA 托管的原件——本站没有任何镜像或重新托管。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>让大多数尝试失败的那一个事实</h2>
+    <div class="warn">
+      <strong>这些 GIF 是 Git LFS 对象。</strong> 像
+      <code>raw.githubusercontent.com/NVlabs/GR00T-WholeBodyControl/main/motionbricks/assets/gifs/teaser_animation.gif</code>
+      这样的 URL 返回的是约 1 KB 的 LFS 指针文件——是合法文本，不是图片——这正是网上大量「motion bricks render」与 icon 链接坏掉的原因。
+      可用的图片 URL 改用 media 主机：
+      <code>media.githubusercontent.com/media/NVlabs/GR00T-WholeBodyControl/main/motionbricks/assets/gifs/&lt;文件&gt;.gif</code>。
+      本页每个「打开原件」链接与 <code>&lt;img&gt;</code> 嵌入都用 media 域名。
+    </div>
+    <p>同一条规则往上推一层：父仓库在普通克隆时会跳过 MotionBricks 权重，所以 <code>out/*.ckpt</code> 文件在运行 <code>git lfs pull</code> 之前都是 1 KB 指针（见<a href="/zh/setup/">安装指南</a>）。</p>
+  </section>
+
+  {groups.map((g) => (
+    <section class="block wrap" id={g.id}>
+      <h2>{g.title}</h2>
+      <p>{g.intro}</p>
+      <div class="gifgrid">
+        {g.items.map((item) => (
+          <figure>
+            <img src={item.src} alt={item.alt} loading="lazy" width="640" height="360" />
+            <figcaption>
+              <strong>{item.title}</strong>
+              {item.key && <> —— 可在<a href="/zh/g1-demo/">G1 演示</a>里用 <span class="kbd">{item.key}</span> 玩到</>}
+              <br />
+              <code>{item.file}</code> · 官方图库循环，静音，约 10&nbsp;s（README 未列逐文件大小） · <a href={item.src} rel="noopener">打开原件</a>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </section>
+  ))}
+
+  <section class="block wrap" id="video-stills">
+    <h2>视频与静帧</h2>
+    <p>GIF 文件夹之外，大家搜索最多的两个大素材：</p>
+    <ul>
+      <li><strong>总览静帧</strong> —— <code>teaser_image_motionbricks.jpg</code>，<a href={OFFICIAL.projectPage} rel="noopener">官方项目页</a>的页头视觉（本站默认社交卡片用的同一个文件）。由 NVIDIA 托管，只链接不复制。<figure style="max-width:720px"><img src={PROJ_IMAGES.overview} alt="MotionBricks 总览静帧：同一个模型生成的动画与机器人结果并排展示" loading="lazy" width="720" height="405" /></figure></li>
+      <li><strong>4K 运行时演示</strong> —— <code>aibm_runtime_main_demo_latest_art_v3.mp4</code>，约 1.2 GB：<a href={OFFICIAL.demo4k} rel="noopener">直接从 research.nvidia.com 下载</a>。README 指向<a href={OFFICIAL.projectPage} rel="noopener">项目页</a>查看完整未剪辑演示与对比视频。</li>
+    </ul>
+    <p>同一个图库文件夹里还有一个不在 Results 一节的 GIF：<a href={GIFS.interactiveDemo} rel="noopener"><code>interactive_demo.gif</code></a>——键盘演示的录屏，嵌入在<a href="/zh/g1-demo/">G1 演示页</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>合法使用这些素材</h2>
+    <p>仓库是公开的，这并不等于可以随意复制。代码是 Apache 2.0，权重受 NVIDIA Open Model License 约束，README 没有单独的图片许可——所以请嵌入 NVIDIA 托管的 URL（或仓库链接）而不是把文件重新上传，并注明来源。本站遵守这条规则：<strong>上面每个素材都是指向 NVIDIA 托管文件的热链，本站 public 文件夹里没有存任何东西。</strong></p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="素材常见问题" />
+  </div>
+</Base>

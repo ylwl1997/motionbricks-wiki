@@ -1,0 +1,72 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, RELATED, GIFS, PROJ_IMAGES, HEADLINE_STATS, CORRECTION_5K, KEYBINDS_STYLE } from "../../data/site.js";
+const faqItems = [
+  { q: "MotionBricks 是什么？", a: "MotionBricks 是 NVIDIA 的实时动作生成框架，发表于 SIGGRAPH 2026（ACM Transactions on Graphics）。它实时生成人形动画与机器人控制动作——官方口径为 15,000 FPS 合成、2 ms 延迟，由单一神经网络骨干在超过 35 万段动作剪辑上训练而成，而不是回放预先制作好的动画片段。" },
+  { q: "MotionBricks 和 Motion Bricks 是同一个东西吗？", a: "是。项目官方写法是 MotionBricks（一个词，驼峰式）。社区帖子里也常见 motion bricks、motion-bricks、motionbrick、nvidia motion brix 等写法，指的都是同一个 NVIDIA Labs 版本，本站在此统一覆盖。" },
+  { q: "这是 MotionBricks 的官方网站吗？", a: "不是。本站是非官方社区指南。官方来源是项目页 nvlabs.github.io/motionbricks 与 GR00T-WholeBodyControl GitHub 仓库；本站的每一条论断都链接到其中一个官方出处。" },
+  { q: "MotionBricks 需要动画蓝图或状态机吗？", a: "不需要。论文的核心主张就是用 smart primitives（智能原语）取代手工编写的过渡图：你下达速度、朝向与风格指令，由同一个模型实时合成动作。官方演示声明：无 foot-locking、无 blending、无碰撞检测、无手工编写过渡。" },
+  { q: "可以免费用于商业项目吗？", a: "源代码是 Apache 2.0。预训练权重受 NVIDIA Open Model License 约束，允许商业使用但需署名并遵守其可信 AI 条款。本站是非官方指南——发布产品前请以官方仓库中的许可文本为准。" },
+];
+const zhNavNote = "本站导航与页面内容为中文翻译，技术命令与官方原文一致。";
+---
+<Base
+  title="MotionBricks 中文指南 — NVIDIA 实时动作生成模型详解 | MotionBricks.wiki"
+  description="motionbricks 教程与安装中文指南：NVIDIA MotionBricks 实时动作生成（15,000 FPS / 2 ms）、smart primitives 智能原语、G1 演示、UE5 集成与诚实的限制说明，全部数据链接官方来源。"
+  path="/"
+  lang="zh">
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">非官方社区指南 · SIGGRAPH 2026</p>
+      <h1>MotionBricks：NVIDIA 实时动作模型，<span style="color:var(--accent)">从安装到原理讲透</span></h1>
+      <p class="lede">MotionBricks（也写作 Motion Bricks）实时生成人形动画与机器人动作，而不是回放预制的动作剪辑。本指南带你从跑通 G1 演示到理解 UE5 集成——每一个数字都链接到 NVIDIA 官方来源。</p>
+      <p style="margin-top:26px">
+        <a class="btn" href="/zh/setup/">在 CUDA 机器上安装 MotionBricks</a>
+        <span class="unofficial-tag" style="margin-left:14px">代码免费（Apache 2.0）· 无需账号，无付费墙</span>
+      </p>
+      <div class="stats">
+        {HEADLINE_STATS.map((s) => (
+          <div class="stat"><span class="v">{s.v}</span><span class="u">{s.unit}</span><div class="n">{s.note}</div></div>
+        ))}
+      </div>
+      <p class="warn" style="margin-top:22px">{CORRECTION_5K}</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>它到底能做什么</h2>
+    <div class="gifgrid">
+      <figure>
+        <img src={GIFS.teaserAnimation} alt="MotionBricks 动画展示：风格化角色穿越多种地形" loading="lazy" width="640" height="360" />
+        <figcaption>动画展示 — 官方 GIF，由 NVIDIA 托管。<a href={OFFICIAL.projectPage} rel="noopener">来源</a></figcaption>
+      </figure>
+      <figure>
+        <img src={GIFS.teaserRobotics} alt="MotionBricks 机器人展示：Unitree G1 人形机器人执行全身动作" loading="lazy" width="640" height="360" />
+        <figcaption>Unitree G1 机器人展示 — 官方 GIF，由 NVIDIA 托管。<a href={OFFICIAL.repo} rel="noopener">来源</a></figcaption>
+      </figure>
+    </div>
+    <p style="margin-top:18px">整个设计由两个想法支撑。一个<strong>模块化潜在骨干</strong>（modular latent backbone）用单一模型覆盖超过 35 万段动作剪辑，因此增加技能不等于增加系统。<strong>智能原语</strong>（smart primitives）——运动、物体、交互——为导航与物体接触提供统一命令面，详见<a href={OFFICIAL.arxiv} rel="noopener">论文</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>从这里开始</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/zh/setup/">安装指南</a></h3><p>用 Git LFS 克隆、拉取约 2.2 GB 权重、避开 1 KB 指针文件陷阱、运行演示。大多数人需要的页面。</p></div>
+      <div class="card"><h3><a href="/zh/g1-demo/">交互式 G1 演示</a></h3><p>全部 15 个键盘控制（WASD 加 11 个风格键）、相机操作与爬行模式限制说明。</p></div>
+      <div class="card"><h3><a href="/zh/ue5/">UE5 集成</a></h3><p>官方 2:40 无剪辑演示是如何制作的，以及引擎侧目前哪些公开、哪些尚未发布。</p></div>
+      <div class="card"><h3><a href="/zh/unity/">Unity 状态</a></h3><p>关于 Unity 的诚实回答：目前没有官方插件——这里给出现实可行的桥接路径与成本。</p></div>
+      <div class="card"><h3><a href="/zh/architecture/">工作原理</a></h3><p>VQVAE 分词器、pose 与 root 模型、zero-shot 在此处的含义、训练数据来源。</p></div>
+      <div class="card"><h3><a href="/zh/styles/">风格库</a></h3><p>僵尸步、跳跃、侧移、蹲伏侧移、受伤行走——每个已发布风格与其键位和官方 GIF。</p></div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>在 NVIDIA 人形机器人技术栈中的位置</h2>
+    <p>MotionBricks 是 <a href={RELATED.sonicRepo} rel="noopener">GR00T Whole-Body Control</a> 计划的动作生成层，与 <a href={RELATED.sonicPage} rel="noopener">GEAR-SONIC</a>（机器人全身控制）和 <a href={RELATED.kimodoPage} rel="noopener">Kimodo</a>（离线生成）并列。详见<a href="/zh/gr00t-sonic/">技术栈地图</a>了解各组件差异。</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} />
+  </div>
+</Base>

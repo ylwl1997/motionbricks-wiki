@@ -1,0 +1,92 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, RELATED, PROJ_IMAGES, HEADLINE_STATS, CORRECTION_5K, LICENSE } from "../../data/site.js";
+const faqItems = [
+  { q: "MotionBricks 是 NVIDIA 做的吗？", a: "是。MotionBricks 是 NVIDIA 研究项目——官方项目页上论文作者单位以 NVIDIA 领衔（合著者来自苏黎世联邦理工学院、西蒙弗雷泽大学和德克萨斯大学奥斯汀分校），代码发布在 NVlabs GitHub 组织下，属于 NVIDIA GR00T Whole-Body Control 计划的一部分。本站是关于它的非官方指南，不是 NVIDIA 资产。" },
+  { q: "NVIDIA MotionBricks 的 GitHub 在哪？", a: "MotionBricks 以 GR00T-WholeBodyControl 单仓库的子项目形式发布：github.com/NVlabs/GR00T-WholeBodyControl，路径 motionbricks/。预训练权重与演示素材在该仓库内由 Git LFS 跟踪，所以克隆前先装 Git LFS——<a href=\"/zh/setup/\">安装指南</a>里有确切的 lfs pull 命令。" },
+  { q: "「motion bricks」或「nvidia motionbrix」是另一个产品吗？", a: "不是。官方名称是 MotionBricks，一个词。搜索还会返回 motion bricks（两个词）、motion-bricks、motionbrick 以及拼写错误的 nvidia motionbrix——它们都指本站覆盖的同一个 SIGGRAPH 2026 发布。" },
+  { q: "NVIDIA MotionBricks 可以免费商用吗？", a: "源代码是 Apache License 2.0。预训练权重受 NVIDIA Open Model License 约束，允许商业使用但需署名并遵守其可信 AI 要求。发布产品前请以官方仓库中的许可文本为准。" },
+];
+---
+<Base
+  title="NVIDIA MotionBricks 中文教程与总览：是什么、GitHub 在哪、怎么安装 | MotionBricks.wiki"
+  description="NVIDIA MotionBricks 中文教程与总览：实时动作生成框架（15,000 FPS / 2 ms / 350,000+ 剪辑）是什么、在 GR00T WBC 中的位置、克隆安装路径，以及 Apache 2.0 与 NVIDIA Open Model License 许可说明。"
+  path="/nvidia/"
+  lang="zh"
+  crumbs={[{ label: "NVIDIA MotionBricks", href: "/zh/nvidia/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">总览 · NVIDIA 动作生成层</p>
+      <h1>NVIDIA MotionBricks：<span style="color:var(--accent)">一页讲清全貌</span></h1>
+      <p class="lede">MotionBricks——很多搜索里写成两个词，偶尔被拼成「nvidia motionbrix」——是 NVIDIA 的实时生成式动作框架，发表于 SIGGRAPH 2026（ACM Transactions on Graphics）。本页汇总 NVIDIA 实际发布了什么、代码在哪、你可以怎么用。</p>
+      <div class="stats">
+        {HEADLINE_STATS.map((s) => (
+          <div class="stat"><span class="v">{s.v}</span><span class="u">{s.unit}</span><div class="n">{s.note}</div></div>
+        ))}
+      </div>
+      <p class="warn" style="margin-top:22px">{CORRECTION_5K}</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>NVIDIA 造了什么</h2>
+    <figure>
+      <img src={PROJ_IMAGES.overview} alt="官方项目页的 MotionBricks 总览图：动画与机器人场景的统一控制" loading="lazy" />
+      <figcaption>官方总览图，托管在 NVIDIA 项目页上。</figcaption>
+    </figure>
+    <p>用论文自己的话概括：一个大规模模块化潜在生成模型——在 350,000+ 段动作剪辑上训练、以 15,000 FPS 运行、2 ms 延迟——配合「智能原语」（smart primitives），把它们暴露成简单命令：移动的速度、朝向与风格；物体交互的代理关键帧。新任务零样本处理，旗舰 UE5 演示的配方是：无 foot-locking、无 blending、无碰撞检测、无手工编写过渡。完整拆解见<a href="/zh/architecture/">架构页</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>它在哪：GR00T WBC 的核心有机组件</h2>
+    <p>MotionBricks 在 NVIDIA 不是孤立存在的。官方项目页直接写明——引用原话：MotionBricks「现在是 NVIDIA GR00T Whole-Body Control 计划的 <strong>core organic component</strong>（核心有机组件），为技术栈的动作生成层提供动力」。与它并列的有 <a href={RELATED.sonicPage} rel="noopener">GEAR-SONIC</a>（全身机器人控制）与离线生成器 <a href={RELATED.kimodoPage} rel="noopener">Kimodo</a>。各层如何分工——以及哪个 SONIC checkpoint 的 lookahead（200 ms / 80 ms / 200 ms）适合你的遥操作预算——见<a href="/zh/gr00t-sonic/">GR00T-SONIC 页</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>怎么拿到它</h2>
+    <p>代码在 NVlabs GitHub 组织下的 <strong>GR00T-WholeBodyControl 单仓库</strong>里——这就是「nvidia motionbricks github 在哪」的答案。README 中的克隆路径，逐字如下：</p>
+    <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl/motionbricks</code></pre>
+    <p>权重（约 2.2 GB，四个文件）由 LFS 跟踪且默认跳过；<a href="/zh/setup/">安装指南</a>给出确切的 <code>git lfs pull</code> 命令，以及那个能抓住最常见安装失败的 1 KB 指针文件检查。按 README 的要求：Python 3.10+、CUDA 可用 GPU、Git LFS。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>许可摘要</h2>
+    <table>
+      <thead><tr><th>对象</th><th>许可</th></tr></thead>
+      <tbody>
+        <tr><td>源代码</td><td><strong>{LICENSE.code}</strong></td></tr>
+        <tr><td>预训练权重</td><td><strong>{LICENSE.weights}</strong></td></tr>
+      </tbody>
+    </table>
+    <p class="note">这是对 README 许可部分的摘要，不是法律文本——商业使用前请阅读官方仓库中的许可文件。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>官方 NVIDIA 渠道——完整清单</h2>
+    <ul>
+      <li>项目页：<a href={OFFICIAL.projectPage} rel="noopener">nvlabs.github.io/motionbricks</a></li>
+      <li>代码（单仓库）：<a href={OFFICIAL.parentRepo} rel="noopener">github.com/NVlabs/GR00T-WholeBodyControl</a> · <a href={OFFICIAL.repo} rel="noopener">motionbricks/ 子目录</a></li>
+      <li>论文 PDF：<a href={OFFICIAL.paperPdf} rel="noopener">SIGGRAPH 2026 论文</a> · <a href={OFFICIAL.arxiv} rel="noopener">arXiv:2604.24833</a> · <a href={OFFICIAL.doi} rel="noopener">DOI 10.1145/3811334</a></li>
+      <li>4K 演示下载：<a href={OFFICIAL.demo4k} rel="noopener">未剪辑的 UE5 运行时演示（1.2 GB）</a></li>
+      <li>训练数据集：<a href={RELATED.bonesDatasets} rel="noopener">bones.studio/datasets</a> · <a href={RELATED.bonesSeed} rel="noopener">Hugging Face 上的 BONES-SEED</a></li>
+      <li>动作表示文档：<a href={OFFICIAL.motionReprDocs} rel="noopener">docs/motion_representation.md</a> · 自定义数据：<a href={OFFICIAL.customDatasetDocs} rel="noopener">docs/adding_your_own_dataset.md</a></li>
+      <li>NVIDIA 项目联系邮箱：<a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a></li>
+    </ul>
+  </section>
+
+  <section class="block wrap">
+    <h2>从这里接着走</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/zh/setup/">安装它</a></h3><p>LFS 感知克隆、权重、依赖——20 分钟跑起演示。</p></div>
+      <div class="card"><h3><a href="/zh/ue5/">UE5 集成</a></h3><p>NVIDIA 为 Unreal 发布了什么、哪些只有视频和论文。</p></div>
+      <div class="card"><h3><a href="/zh/gr00t-sonic/">GR00T 与 SONIC</a></h3><p>MotionBricks 供给的机器人层，逐个模型看。</p></div>
+      <div class="card"><h3><a href="/zh/news/">发布新闻</a></h3><p>预览、路线图与完整发布状态，带日期、带来源。</p></div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="NVIDIA MotionBricks 常见问题" />
+  </div>
+</Base>

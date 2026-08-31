@@ -1,0 +1,121 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, CHECKPOINTS, KNOWN_ISSUES } from "../../data/site.js";
+const faqItems = [
+  { q: "NVIDIA MotionBricks 怎么安装（中文步骤）？", a: "先装 Git LFS，克隆 GR00T-WholeBodyControl 单仓库，用 git lfs pull 显式拉取 MotionBricks 权重（父仓库默认跳过它们），创建 Python 3.10 conda 环境，在 motionbricks/ 内 pip install -e .，然后运行交互式 G1 演示脚本。完整可复制命令见本页上方。" },
+  { q: "MotionBricks 需要 GPU 吗？", a: "需要——官方 README 明确要求 CUDA 可用 GPU、Python 3.10 与 Git LFS。纯 CPU 机器可以阅读与构建仓库，但无法按文档运行交互式演示。" },
+  { q: "为什么我的权重文件只有 1 KB？", a: "它们是 Git LFS 指针文件，不是真实权重——这是最常见的坑，因为父仓库默认跳过 MotionBricks 权重以省去约 2.2 GB 下载。在仓库根目录运行：git lfs pull --include=\"motionbricks/out/**\" --exclude=\"\" 然后重新用 ls -lh 核对大小。" },
+  { q: "完整的 MotionBricks 演示需要多少磁盘？", a: "约 2.2 GB 权重（VQVAE 约 273 MB、pose 约 1.6 GB、root 约 391 MB、G1-clip 约 7.5 MB）加上仓库本身与 LFS 跟踪的 GIF 和网格资源。预留约 5 GB 工作空间。" },
+  { q: "能在 Windows 上运行演示吗？", a: "键盘按键抓取方案仅限 Linux/X11，因此在 Windows（以及 macOS/Wayland）上部分 MuJoCo 快捷键可能与控制键冲突。官方临时方案：保持终端聚焦而不是 MuJoCo 窗口，并安装 keyboard Python 包（Windows 上替代 pynput）。" },
+  { q: "MotionBricks 演示有独立安装包下载吗？", a: "没有独立安装包。官方分发方式是带 Git LFS 资源的 GitHub 仓库；任何其他渠道打包的版本都非官方。按本页的 clone 与 lfs pull 命令操作即可。" },
+];
+---
+<Base
+  title="MotionBricks 安装教程（中文）— 克隆、权重、LFS 排错 | MotionBricks.wiki"
+  description="NVIDIA MotionBricks 安装步骤（中文版）：git clone + Git LFS、拉取约 2.2 GB 权重、修复 1 KB LFS 指针文件、安装 Python 3.10 依赖、启动交互式 G1 演示。命令与官方 README 逐字一致。"
+  path="/setup/"
+  lang="zh"
+  crumbs={[{ label: "安装指南", href: "/zh/setup/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">指南 · 与官方 README 逐字核对</p>
+      <h1>MotionBricks 安装教程：<span style="color:var(--accent)">克隆、权重、第一个演示</span></h1>
+      <p class="lede">从空文件夹到键盘驱动的 G1 人形机器人，只需九条命令——外加两个几乎人人都会踩的坑：默认跳过的 LFS 权重与 1 KB 指针文件。下方每条命令均逐字摘自<a href={OFFICIAL.repo} rel="noopener">官方 README</a>，仅讲解顺序有所不同。</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="本页目录">
+      <p class="tt">本页目录</p>
+      <a href="#requirements">环境要求</a>
+      <a href="#clone">克隆（LFS）</a>
+      <a href="#checkpoints">拉取权重</a>
+      <a href="#verify">核对文件大小</a>
+      <a href="#deps">安装依赖</a>
+      <a href="#run">运行演示</a>
+      <a href="#known">已知问题</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+
+    <div>
+      <section id="requirements" class="block">
+        <h2>环境要求</h2>
+        <ul>
+          <li><strong>Python 3.10+</strong></li>
+          <li><strong>CUDA 可用 GPU</strong></li>
+          <li><strong><a href="https://git-lfs.com/" rel="noopener">Git LFS</a></strong> —— 权重、网格与展示 GIF 均由 LFS 跟踪</li>
+        </ul>
+        <p>MotionBricks 是 <a href={OFFICIAL.parentRepo} rel="noopener">GR00T-WholeBodyControl</a> 的子项目：克隆父仓库后在 <code>motionbricks/</code> 目录内工作。</p>
+      </section>
+
+      <section id="clone" class="block">
+        <h2>1 · 克隆仓库</h2>
+        <pre class="code-block"><code>git lfs install</code></pre>
+        <p>父仓库<strong>默认跳过 MotionBricks 预训练权重</strong>，所以普通单仓库克隆不会自动下载额外的约 2.2 GB 权重文件。仅需源码（例如要在自己的数据上训练）时这样克隆：</p>
+        <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl/motionbricks</code></pre>
+      </section>
+
+      <section id="checkpoints" class="block">
+        <h2>2 · 显式拉取权重</h2>
+        <p>运行交互式演示需要权重<em>以及</em> G1 网格。在仓库根目录：</p>
+        <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl
+git lfs pull --include="motionbricks/out/**" --exclude=""
+git lfs pull --include="motionbricks/assets/skeletons/g1/meshes/**" --exclude=""  # needed for interactive demo
+cd motionbricks</code></pre>
+      </section>
+
+      <section id="verify" class="block">
+        <h2>3 · 核对文件确实下载完成</h2>
+        <p>这一步很多人跳过，然后花一小时排错。权重文件必须是真实大小：</p>
+        <pre class="code-block"><code>ls -lh out/G1-clip.ckpt                                     # ~7.5 MB
+ls -lh out/motionbricks_vqvae/version_1/checkpoints/*.ckpt  # ~273 MB
+ls -lh out/motionbricks_pose/version_1/checkpoints/*.ckpt   # ~1.6 GB
+ls -lh out/motionbricks_root/version_1/checkpoints/*.ckpt   # ~391 MB</code></pre>
+        <div class="warn">
+          <strong>如果某个权重约 1 KB，它是 Git LFS 指针，不是模型本体。</strong>
+          <p style="margin-top:6px">在仓库根目录拉取真实字节并重新核对：</p>
+          <pre class="code-block"><code>git lfs pull --include="motionbricks/out/**" --exclude=""</code></pre>
+          <p>快速判断可疑文件：<code>head -c 60 out/motionbricks_pose/version_1/checkpoints/&lt;文件&gt;.ckpt</code> —— 真实权重以二进制数据开头；指针文件以 <code>version https://git-lfs.github.com/spec/v1</code> 开头。</p>
+        </div>
+        <table>
+          <caption style="text-align:left;color:var(--ink-2);font-size:13px;padding-bottom:6px">权重清单（官方大小）</caption>
+          <thead><tr><th>文件</th><th>预期大小</th></tr></thead>
+          <tbody>{CHECKPOINTS.map((c) => <tr><td><code>{c.path}</code></td><td>{c.size}</td></tr>)}</tbody>
+        </table>
+      </section>
+
+      <section id="deps" class="block">
+        <h2>4 · 安装依赖</h2>
+        <pre class="code-block"><code># Create environment
+conda create -n motionbricks python=3.10 -y
+conda activate motionbricks
+
+# Install dependencies
+pip install -e .
+
+# Linux only: needed for keyboard input and MuJoCo key-grab workaround
+pip install pynput python-xlib</code></pre>
+      </section>
+
+      <section id="run" class="block">
+        <h2>5 · 运行交互式 G1 演示</h2>
+        <pre class="code-block"><code>DISPLAY=:1 python scripts/interactive_demo_g1.py</code></pre>
+        <p>这会打开 MuJoCo 查看器并加载 G1 机器人；用键盘实时驱动它，按住鼠标左键拖动可旋转观察方向。前缀 <code>DISPLAY=:1</code> 假设 X11 会话在 GPU 1 的显示上——请按你的环境调整或去掉。完整键位表与相机操作见<a href="/zh/g1-demo/">G1 演示指南</a>。</p>
+      </section>
+
+      <section id="known" class="block">
+        <h2>已知问题（README 原文）</h2>
+        <ul>
+          {KNOWN_ISSUES.map((k) => <li><strong>{k.t}:</strong> {k.d}</li>)}
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="安装常见问题" />
+  </div>
+</Base>

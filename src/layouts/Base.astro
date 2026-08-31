@@ -1,28 +1,67 @@
 ---
-// Global layout: SEO head, hreflang, GA4 placeholder, breadcrumb, nav, legal footer.
+// Global layout: SEO head, hreflang, GA4, breadcrumb, nav, language dropdown, legal footer.
 interface Props {
   title: string;
   description: string;
-  path: string;              // canonical path e.g. "/setup/"
+  path: string;              // canonical path e.g. "/setup/" (EN root path)
   crumbs?: { label: string; href: string }[];
-  lang?: string;             // "en" | "es" | "ja"
+  lang?: string;             // "en" | "es" | "ja" | "zh"
   ogImage?: string;
 }
 const {
   title, description, path, crumbs = [], lang = "en",
   ogImage = "https://nvlabs.github.io/motionbricks/static/images/teaser_image_motionbricks.jpg",
 } = Astro.props;
-const canon = `https://motionbricks.wiki${path}`;
+// For a zh page, the EN path is "/zh/<path>"; pass path as the EN route key and compute below.
+const canonPath = lang === "zh" ? `/zh${path === "/" ? "" : path}` : (lang === "es" ? "/es/" : lang === "ja" ? "/ja/" : path);
+const canon = `https://motionbricks.wiki${canonPath}`;
+
+// Language-aware labels
+const L = lang === "zh" ? {
+  home: "首页", setup: "安装指南", g1: "G1 演示", ue5: "UE5", unity: "Unity",
+  arch: "架构", styles: "风格库", sonic: "SONIC", news: "新闻",
+  skip: "跳到主要内容", crumbsHome: "首页", about: "关于本站", community: "社区",
+  assets: "官方素材", officialRepo: "官方仓库",
+  legal: "非官方社区指南——与 NVIDIA 无关联、未获 NVIDIA 背书或赞助。MotionBricks™ 与 NVIDIA® 是 NVIDIA Corporation 的商标。代码事实来源于公开的 MotionBricks README（Apache 2.0）；模型权重受 NVIDIA Open Model License 约束。所有演示媒体均链接 NVIDIA 官方托管文件，本站不镜像、不自托管任何内容。",
+} : lang === "es" ? {
+  home: "Inicio", setup: "Instalación", g1: "Demo G1", ue5: "UE5", unity: "Unity",
+  arch: "Arquitectura", styles: "Estilos", sonic: "SONIC", news: "Noticias",
+  skip: "Saltar al contenido", crumbsHome: "Inicio", about: "Sobre este sitio", community: "Comunidad",
+  assets: "Materiales oficiales", officialRepo: "Repositorio oficial",
+  legal: "Guía comunitaria no oficial — no afiliada, respaldada ni patrocinada por NVIDIA. MotionBricks™ y NVIDIA® son marcas comerciales de NVIDIA Corporation. Los datos de código provienen del README público de MotionBricks (Apache 2.0); los pesos del modelo están cubiertos por la NVIDIA Open Model License. Todos los medios de demostración enlazan archivos alojados por NVIDIA; nada se refleja ni se re-hospeda aquí.",
+} : lang === "ja" ? {
+  home: "ホーム", setup: "セットアップ", g1: "G1デモ", ue5: "UE5", unity: "Unity",
+  arch: "アーキテクチャ", styles: "スタイル", sonic: "SONIC", news: "ニュース",
+  skip: "本文へスキップ", crumbsHome: "ホーム", about: "このサイトについて", community: "コミュニティ",
+  assets: "公式アセット", officialRepo: "公式リポジトリ",
+  legal: "非公式コミュニティガイド — NVIDIA とは無関係であり、NVIDIA の承認・後援を受けていません。MotionBricks™ および NVIDIA® は NVIDIA Corporation の商標です。コードの事実は公開されている MotionBricks README（Apache 2.0）に基づきます。モデル重みは NVIDIA Open Model License の対象です。デモメディアはすべて NVIDIA ホストのファイルへのリンクであり、当サイトではミラーも再ホストもしません。",
+} : {
+  home: "Home", setup: "Setup", g1: "G1 demo", ue5: "UE5", unity: "Unity",
+  arch: "Architecture", styles: "Styles", sonic: "SONIC", news: "News",
+  skip: "Skip to content", crumbsHome: "Home", about: "About this site", community: "Community",
+  assets: "Official assets", officialRepo: "Official repo",
+  legal: "Unofficial community guide — not affiliated with, endorsed by, or sponsored by NVIDIA. MotionBricks™ and NVIDIA® are trademarks of NVIDIA Corporation. Code facts sourced from the public MotionBricks README (Apache 2.0); model weights are covered by the NVIDIA Open Model License. All demo media links to NVIDIA-hosted files; nothing is mirrored or re-hosted here.",
+};
+
 const nav = [
-  { href: "/setup/", label: "Setup" },
-  { href: "/g1-demo/", label: "G1 demo" },
-  { href: "/ue5/", label: "UE5" },
-  { href: "/unity/", label: "Unity" },
-  { href: "/architecture/", label: "Architecture" },
-  { href: "/styles/", label: "Styles" },
-  { href: "/gr00t-sonic/", label: "SONIC" },
-  { href: "/news/", label: "News" },
+  { href: "/setup/", label: L.setup },
+  { href: "/g1-demo/", label: L.g1 },
+  { href: "/ue5/", label: L.ue5 },
+  { href: "/unity/", label: L.unity },
+  { href: "/architecture/", label: L.arch },
+  { href: "/styles/", label: L.styles },
+  { href: "/gr00t-sonic/", label: L.sonic },
+  { href: "/news/", label: L.news },
 ];
+
+// Language switch: map each language to the equivalent page path.
+const langMap = { en: "/", es: "/es/", ja: "/ja/", zh: "/zh/" };
+const langLabels = { en: "English", es: "Español", ja: "日本語", zh: "中文" };
+const basePathForLang = (l: string) => (
+  l === "en" ? path
+  : l === "zh" ? (path === "/" ? "/zh/" : `/zh${path}`)
+  : l === "es" ? "/es/" : "/ja/"
+);
 ---
 <!doctype html>
 <html lang={lang}>
@@ -32,11 +71,10 @@ const nav = [
   <title>{title}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={canon} />
-  <link rel="alternate" hreflang="en" href={`https://motionbricks.wiki${path === "/es/" || path === "/ja/" ? "/" : path}`} />
-  {path === "/" && <>
-    <link rel="alternate" hreflang="es" href="https://motionbricks.wiki/es/" />
-    <link rel="alternate" hreflang="ja" href="https://motionbricks.wiki/ja/" />
-  </>}
+  <link rel="alternate" hreflang="en" href={`https://motionbricks.wiki${path}`} />
+  <link rel="alternate" hreflang="es" href="https://motionbricks.wiki/es/" />
+  <link rel="alternate" hreflang="ja" href="https://motionbricks.wiki/ja/" />
+  <link rel="alternate" hreflang="zh" href={`https://motionbricks.wiki/zh${path === "/" ? "" : path}`} />
   <link rel="alternate" hreflang="x-default" href="https://motionbricks.wiki/" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
@@ -48,9 +86,9 @@ const nav = [
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" as="style" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" />
   <link rel="stylesheet" href="/styles/global.css" />
-  <!-- GA4: G-T9W89LYVR5 (MotionBricks Wiki property, webmaster provisioned) -->
+  <!-- GA4: G-T9W89LYVR5 (MotionBricks Wiki property) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-T9W89LYVR5"></script>
-  <script>
+  <script is:inline>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
@@ -59,24 +97,29 @@ const nav = [
   <slot name="head" />
 </head>
 <body>
-  <a class="skip" href="#main">Skip to content</a>
+  <a class="skip" href="#main">{L.skip}</a>
   <header class="site-head">
     <div class="wrap">
-      <a class="logo" href="/">Motion<span class="b">Bricks</span>.wiki</a>
+      <a class="logo" href={lang === "zh" ? "/zh/" : "/"}>Motion<span class="b">Bricks</span>.wiki{lang === "zh" ? " 中文" : ""}</a>
       <nav class="nav" aria-label="Main">
-        {nav.map((n) => <a href={n.href} aria-current={Astro.url.pathname === n.href ? "page" : undefined}>{n.label}</a>)}
+        {nav.map((n) => {
+          const href = lang === "zh" ? `/zh${n.href === "/" ? "" : n.href}` : n.href;
+          return <a href={href} aria-current={Astro.url.pathname === href ? "page" : undefined}>{n.label}</a>;
+        })}
       </nav>
-      <div class="lang-switch" aria-label="Language">
-        <a href="/" hreflang="en">EN</a>
-        <a href="/es/" hreflang="es">ES</a>
-        <a href="/ja/" hreflang="ja">日本語</a>
+      <div class="lang-switch" aria-label="Language selector">
+        <select id="lang-select" aria-label="Change language">
+          {Object.keys(langMap).map((k) => (
+            <option value={basePathForLang(k)} selected={lang === k}>{langLabels[k]}</option>
+          ))}
+        </select>
       </div>
     </div>
   </header>
 
   {crumbs.length > 0 && (
     <nav class="crumbs wrap" aria-label="Breadcrumb">
-      <a href="/">Home</a>
+      <a href={lang === "zh" ? "/zh/" : "/"}>{L.crumbsHome}</a>
       {crumbs.map((c) => <><span>›</span><a href={c.href}>{c.label}</a></>)}
     </nav>
   )}
@@ -88,19 +131,21 @@ const nav = [
   <footer class="site-foot">
     <div class="wrap">
       <div class="foot-links">
-        <a href="/about/">About this site</a>
-        <a href="/community/">Community</a>
-        <a href="/news/">News</a>
-        <a href="/assets/">Official assets</a>
-        <a href={new URL("https://github.com/NVlabs/GR00T-WholeBodyControl")} rel="noopener">Official repo</a>
+        <a href={lang === "zh" ? "/zh/about/" : "/about/"}>{L.about}</a>
+        <a href={lang === "zh" ? "/zh/community/" : "/community/"}>{L.community}</a>
+        <a href={lang === "zh" ? "/zh/news/" : "/news/"}>{L.news}</a>
+        <a href={lang === "zh" ? "/zh/assets/" : "/assets/"}>{L.assets}</a>
+        <a href={new URL("https://github.com/NVlabs/GR00T-WholeBodyControl")} rel="noopener">{L.officialRepo}</a>
       </div>
-      <p class="foot-legal">
-        Unofficial community guide — not affiliated with, endorsed by, or sponsored by NVIDIA.
-        MotionBricks™ and NVIDIA® are trademarks of NVIDIA Corporation.
-        Code facts sourced from the public MotionBricks README (Apache 2.0); model weights are covered by the NVIDIA Open Model License.
-        All demo media links to NVIDIA-hosted files; nothing is mirrored or re-hosted here.
-      </p>
+      <p class="foot-legal">{L.legal}</p>
     </div>
   </footer>
+  <script is:inline>
+    // Language dropdown: each option's value is the target path; jump on change.
+    const sel = document.getElementById("lang-select");
+    sel && sel.addEventListener("change", () => {
+      if (sel.value) location.href = sel.value;
+    });
+  </script>
 </body>
 </html>

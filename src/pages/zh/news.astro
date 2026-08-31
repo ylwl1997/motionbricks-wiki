@@ -1,0 +1,59 @@
+---
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, NEWS_TIMELINE } from "../../data/site.js";
+// 博客文章注册表——/zh/news/ 的单一来源。新文章在这里添加。
+const posts = [
+  { slug: "what-350000-15000-actually-mean", title: "帖子里的「350,000 / 15,000」到底是什么意思", desc: "每个爆款帖子都会引用的两个数字，来自同一句话的不同维度。这里是官方措辞的逐字解读。", tag: "解释", date: "2026-08-30" },
+  { slug: "motionbricks-vs-kimodo", title: "MotionBricks 对比 Kimodo：实时与离线生成是两种活", desc: "NVIDIA 发布了两个看起来可以互换的兄弟动作模型——直到你去看它们各自优化什么。", tag: "对比", date: "2026-08-29" },
+  { slug: "smart-primitives-explained", title: "智能原语详解：什么取代了动画蓝图？", desc: "速度、朝向、风格、代理关键帧——让一个模型同时驾驭导航与物体接触的接口。", tag: "概念", date: "2026-08-28" },
+  { slug: "motionbricks-at-siggraph-2026", title: "MotionBricks 在 SIGGRAPH 2026：论文到底主张了什么", desc: "TOG '26、DOI、16 位作者，以及头条数字的逐行解读——附官方引用。", tag: "论文", date: "2026-08-27" },
+  { slug: "nvidias-humanoid-motion-stack", title: "NVIDIA 人形动作技术栈：GR00T WBC、SONIC 与 MotionBricks 各就各位", desc: "一张各部件的地图（含三个 SONIC checkpoint，以及人人都跳过的那条 lookahead 提醒）。", tag: "分析", date: "2026-08-26" },
+  { slug: "bones-seed-dataset", title: "BONES-SEED：MotionBricks 背后的 142,220 段动捕数据集", desc: "训练语料里实际有什么、怎么拉取——以官方页面为准，不信传言。", tag: "数据", date: "2026-08-25" },
+];
+const { title, description } = {
+  title: "MotionBricks 新闻与指南索引 — 发布、论文笔记、数据集技巧 | MotionBricks.wiki",
+  description: "NVIDIA MotionBricks 与 GR00T-WholeBodyControl 技术栈的发布时间线，加新手指南：数字到底什么意思、BONES-SEED 数据、UE5 与 Unity 状态。全部带日期、带来源。",
+};
+---
+<Base {title} {description} path="/news/" lang="zh" crumbs={[{ label: "新闻", href: "/zh/news/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">新闻与长文</p>
+      <h1>MotionBricks 周边一切新动态，<span style="color:var(--accent)">带来源、带日期</span></h1>
+      <p class="lede">发布记录取自官方 README 时间线，外加那些把一个事实追到尽头的指南。搜「motionbricks siggraph 2026」之类的中文关键词会先落到这里。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>官方发布时间线</h2>
+    <table>
+      <thead><tr><th>日期</th><th>发布了什么</th></tr></thead>
+      <tbody>
+        {NEWS_TIMELINE.map(([d, t]) => <tr><td><code>{d}</code></td><td>{t}</td></tr>)}
+      </tbody>
+    </table>
+    <p style="color:var(--ink-2);font-size:13.5px">日期与措辞以 <a href={OFFICIAL.parentRepo} rel="noopener">GR00T-WholeBodyControl README</a> 为准。完整训练流程发布（目标大约在 2026-04-27 预览之后一个月）在该路线图里跟踪。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>指南与分析</h2>
+    <div class="post-list">
+      {posts.map((p) => (
+        <article class="post-item">
+          <h3><a href={`/zh/blog/${p.slug}/`}>{p.title}</a><span class="tag">{p.tag}</span></h3>
+          <p style="color:var(--ink-2);margin:6px 0 4px">{p.desc}</p>
+          <p class="meta">{p.date} · MotionBricks.wiki 编辑部（非官方）</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>上手起点</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/zh/setup/">装好它</a></h3><p>九条命令跑到 G1 演示，LFS 陷阱已标注。</p></div>
+      <div class="card"><h3><a href="/zh/g1-demo/">开动演示</a></h3><p>15 个按键、11 种风格、相机技巧。</p></div>
+      <div class="card"><h3><a href="/zh/assets/">官方媒体索引</a></h3><p>全部片头 GIF 与 4K 演示，只给原始 URL。</p></div>
+    </div>
+  </section>
+</Base>

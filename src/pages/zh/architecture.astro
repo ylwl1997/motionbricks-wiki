@@ -1,0 +1,100 @@
+---
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, RELATED, GIFS, CHECKPOINTS } from "../../data/site.js";
+---
+<Base
+  title="MotionBricks 工作原理：潜在骨干与智能图元 | MotionBricks.wiki"
+  description="MotionBricks 架构：VQVAE 动作分词器、pose 与 root 模型、智能图元指令、zero-shot 零样本任务，以及 BONES-SEED 训练语料。每条论断都对应论文或 README。"
+  path="/architecture/"
+  lang="zh"
+  crumbs={[{ label: "架构", href: "/zh/architecture/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">技术指南 · 每条论断都对应论文或 README</p>
+      <h1>架构：<span style="color:var(--accent)">一个潜在骨干，两个指令面</span></h1>
+      <p class="lede">MotionBricks 是一个模块化潜在生成骨干——VQVAE 动作分词器、pose 模型和 root 模型——通过智能图元暴露能力：移动用速度、朝向与风格指令，物体交互用代理关键帧。本页把这些组件对应到<a href="/zh/setup/">安装</a>后你会看到的文件。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>模块化潜在骨干</h2>
+    <p>不是单个巨型网络，发布版训练了三个组件，权重在 <code>out/</code> 里——训练脚本与组件一一对应（见<a href="/zh/training/">训练指南</a>）：</p>
+    <div class="grid">
+      <div class="card">
+        <h3>1 · VQVAE 动作分词器</h3>
+        <p>把动作压缩为离散潜在编码。另外两个组件都在这个潜在空间里工作，<code>scripts/train_vqvae.py</code> 最先训练它——pose 模型需要它的 checkpoint。</p>
+      </div>
+      <div class="card">
+        <h3>2 · Pose 模型</h3>
+        <p>在分词器的潜在空间里生成动作的身体位姿侧，由智能图元指令驱动。Checkpoint 目录：<code>out/motionbricks_pose/</code>。</p>
+      </div>
+      <div class="card">
+        <h3>3 · Root 模型</h3>
+        <p>生成根轨迹——身体去哪、多快。按 README 注释，它训练时<em>不需要</em> VQVAE，所以 root 与 pose 把任务干净地拆开。Checkpoint 目录：<code>out/motionbricks_root/</code>。</p>
+      </div>
+    </div>
+    <p>单个骨干覆盖整个语料的回报是<a href={OFFICIAL.projectPage} rel="noopener">项目页</a>上的数字：一个模型覆盖 350,000+ 动作片段，15,000 FPS，2 ms 延迟——而不是一堆按技能拆开的系统库。</p>
+    <table>
+      <caption class="note">完整 LFS 拉取后 <code>out/</code> 里的内容（按 README，合计约 2.2 GB）：</caption>
+      <thead><tr><th>Checkpoint 文件</th><th>大小</th></tr></thead>
+      <tbody>{CHECKPOINTS.map((c) => <tr><td><code>{c.path}</code></td><td>{c.size}</td></tr>)}</tbody>
+    </table>
+    <p class="note"><strong>如实说明范围：</strong>README 点名了三个模型组件和文件布局，但没有说明 <code>out/G1-clip.ckpt</code> 除随发布一起提供之外的用途；内部机制以论文的方法章节为准。本页不声称任何官方材料没写的东西。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>智能图元：指令面</h2>
+    <p>骨干是大规模的；接口是小的。两个图元家族覆盖导航与交互，项目页描述为"用于创作导航与物体交互的统一、稳健、直观接口"：</p>
+    <div class="grid">
+      <div class="card">
+        <h3>智能移动——速度 + 朝向 + 风格</h3>
+        <p>你指挥三件事：多快、哪个方向、什么风格。项目页：该图元"从任意速度、朝向与风格指令合成自然动作，无需重新训练或按任务调参"。演示里的 11 个风格键全是这个接口——见<a href="/zh/styles/">风格库</a>。</p>
+      </div>
+      <div class="card">
+        <h3>智能物体——代理关键帧</h3>
+        <p>场景交互被指定为"一组灵活的代理关键帧；骨干网络补全接近、接触与跟随动作——每次运行都有自然变化"（项目页）。README 图库展示了拾取、摔倒、跳长凳与坐下。</p>
+      </div>
+    </div>
+    <figure style="max-width:560px">
+      <img src={GIFS.objPickupSword} alt="G1 风格人形俯身、抓住剑道具并持剑站起——MotionBricks 生成的智能物体拾取动作" loading="lazy" width="480" height="270" />
+      <figcaption>智能物体在动作中：代理关键帧进，完整的接近-接触-跟随动作出。官方 GIF，由 NVIDIA 托管。</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>Zero-shot：新任务无需重训</h2>
+    <p>论文的可扩展性主张在项目页上写得很直白："MotionBricks 以 zero-shot 方式应用于新的下游任务——无需微调或任务专属标注——因此应用可以像搭积木一样即插即用地组装，无需动画专家知识。"一组新指令组合不是一次新训练；同一个骨干就能回答它。这就是"像积木一样组装动作"在实践中的含义。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>动画管线里消失的东西</h2>
+    <p>官方 2:40 无剪辑 UE5 演示是证据，项目页逐字给出了配方：<em>"每个动作都由神经网络生成——没有脚部锁定、没有混合、没有碰撞检测、没有手写过渡。"</em>其中每一项都是一整类传统动画图工作：</p>
+    <ul>
+      <li><strong>没有脚部锁定</strong>——接触来自生成动作本身，而不是 IK 补丁。</li>
+      <li><strong>没有混合</strong>——动画之间没有混合空间或加权片段混合。</li>
+      <li><strong>没有碰撞检测</strong>——物体接触是生成的，不是物理检查解算的。</li>
+      <li><strong>没有手写过渡</strong>——没有需要接线维护的过渡图；运行时过渡是连续的，正如 Idle · Walk · Jog · Run 图库 GIF 所示。</li>
+    </ul>
+    <p>这在 Unreal 工作流里意味着什么，见<a href="/zh/ue5/">UE5 集成页</a>；这个设计的机器人侧邻居是<a href="/zh/gr00t-sonic/">GEAR-SONIC</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>训练数据从哪来</h2>
+    <p>语料是 <strong>BONES-SEED 数据集</strong>，README 描述为"来自真实人类演员的 35 万个生产级动作捕捉片段"（<a href={RELATED.bonesSeed} rel="noopener">Hugging Face 数据集页</a>）。"350,000 片段 vs 15,000 FPS"这个说法按来源的拆解——包括 142,220 条重定向 G1 轨迹与约 288 小时——在<a href="/zh/assets/">官方素材页</a>展开。</p>
+    <p>机器人可用的轨迹由 <strong>SOMA Retargeter</strong> 产生，"把 SOMA 捕捉重定向到 G1 的 Newton 求解器"（README）——见 <a href={RELATED.somaRetargeter} rel="noopener">NVIDIA/soma-retargeter</a>。SOMA 捕捉变成 G1 MuJoCo 轨迹，骨干学的就是这些；动作特征格式本身记录在官方 <a href={OFFICIAL.motionReprDocs} rel="noopener">motion representation 文档</a>里。</p>
+    <figure style="max-width:560px">
+      <img src={GIFS.teaserRobotics} alt="Unitree G1 人形执行 MotionBricks 生成的全身动作——官方机器人学预告" loading="lazy" width="480" height="270" />
+      <figcaption>官方 README 图库的机器人学预告——动作是实时生成的，不是回放。</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>下一步</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/zh/training/">训练指南</a></h3><p>三条训练命令逐字照录、合成数据默认值、真实数据集下载与自定义数据文档。</p></div>
+      <div class="card"><h3><a href="/zh/styles/">风格库</a></h3><p>全部 11 个风格键位，每个风格族配官方 GIF，以及诚实的限制说明。</p></div>
+      <div class="card"><h3><a href="/zh/setup/">安装指南</a></h3><p>用 Git LFS 克隆、拉取约 2.2 GB 权重、避开 1 KB 指针陷阱。</p></div>
+      <div class="card"><h3><a href="/zh/assets/">官方素材</a></h3><p>每个数据集、checkpoint 与文档的源链接，以及数字勘误说明。</p></div>
+    </div>
+  </section>
+</Base>

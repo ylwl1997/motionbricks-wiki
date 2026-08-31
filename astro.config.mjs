@@ -5,7 +5,7 @@ export default defineConfig({
   site: 'https://motionbricks.wiki',
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'es', 'ja'],
+    locales: ['en', 'es', 'ja', 'zh'],
     routing: {
       prefixDefaultLocale: false,
     },

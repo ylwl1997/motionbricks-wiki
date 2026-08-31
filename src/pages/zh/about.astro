@@ -1,0 +1,64 @@
+---
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, NEWS_TIMELINE, CORRECTION_5K } from "../../data/site.js";
+---
+<Base
+  title="关于 MotionBricks.wiki：我们是谁、如何核查事实 | MotionBricks.wiki"
+  description="MotionBricks.wiki 是 NVIDIA MotionBricks 的独立社区中文指南——本站如何核实每一条论断、更新政策，以及公开发布的「5,000 FPS」纠错。"
+  path="/about/"
+  lang="zh"
+  crumbs={[{ label: "关于本站", href: "/zh/about/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">关于本站</p>
+      <h1>一份 MotionBricks 独立指南——<span style="color:var(--accent)">以及它给自己定的规矩</span></h1>
+      <p class="lede">MotionBricks.wiki 是为 NVIDIA MotionBricks 动作框架写的社区文档站。我们不是 NVIDIA，不代表构建它的研究人员说话，也没有资格替他们回答问题。我们做的是：仔细读官方材料，写出我们希望早就存在的指南。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>谁在维护这个站</h2>
+    <p>本指南由几位独立开发者维护——他们在 MotionBricks 安装帖里绕了太久，决定一次性写下来。每个页面页脚都完整保留声明：<em>非官方社区指南——与 NVIDIA 无关联、未获 NVIDIA 背书或赞助</em>。MotionBricks™ 与 NVIDIA® 是 NVIDIA Corporation 的商标。关于项目本身的问题属于它的作者——<a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a>——不属于我们。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>方法论：我们怎么写</h2>
+    <ul>
+      <li><strong>事实限定在点名来源内。</strong>本站每一条技术论断都追溯到一个：官方项目页、MotionBricks README、GR00T-WholeBodyControl 父 README、arXiv 论文或 BONES-SEED 数据集页面。来源没说的，我们不说——来源沉默时我们标出缺口而不是填补它（架构页就明确标了一个这样的缺口）。</li>
+      <li><strong>命令只复制、不改写。</strong>每条安装、克隆、训练命令都按 README 原样呈现——注释行也保留。我们不声称在你的硬件上重跑过它们，也不悄悄「改进」它们。</li>
+      <li><strong>数字只来自官方页面。</strong>15,000 FPS、2 ms、350,000+ 剪辑、142,220 剪辑、约 288 小时、约 2.2 GB 权重、SONIC 的 200/80/200 ms lookahead。没有编造的星标数、参数数或基准。</li>
+      <li><strong>我们公开发布纠错。</strong>早期社区帖子流传的「5,000 FPS」与任何官方来源都对不上：{CORRECTION_5K}这条纠错出现在每一个出现该数字的页面上，而不是藏在 errata 页。</li>
+      <li><strong>媒体只链接、不镜像。</strong>本站所有 GIF 与图片都热链 NVIDIA 托管的文件（media.githubusercontent.com 与项目页）。这里不重新托管任何东西。</li>
+    </ul>
+  </section>
+
+  <section class="block wrap">
+    <h2>更新政策</h2>
+    <p>预览发布还年轻，官方路线图在动——按 README 的说法，GEAR-SONIC 技术栈内的完整训练流程「目标大约在一个月后」，从 2026-04-27 公告起算，这是项目自己的估计，不是我们复述成截止日期的承诺。仓库真的发布了什么，我们就更新指南：下面每条带日期的条目都有官方渠道的发布或新闻背书，<a href="/zh/news/">新闻页</a>跟踪同一条持续增长的时间线。路线图如果延期，我们会明说，而不是保留一个过期的日期。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>本站覆盖什么</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/zh/setup/">安装</a></h3><p>克隆、LFS、权重、依赖、首次演示运行。</p></div>
+      <div class="card"><h3><a href="/zh/architecture/">架构</a></h3><p>三组件骨干与智能原语接口。</p></div>
+      <div class="card"><h3><a href="/zh/styles/">风格库</a></h3><p>全部 11 个风格键位，附官方 GIF 与限制。</p></div>
+      <div class="card"><h3><a href="/zh/nvidia/">NVIDIA 总览</a></h3><p>NVIDIA 发布了什么、在哪、什么许可。</p></div>
+      <div class="card"><h3><a href="/zh/community/">社区</a></h3><p>讨论实际发生在哪里。</p></div>
+      <div class="card"><h3><a href="/zh/news/">新闻</a></h3><p>带日期的发布与指南，全部有来源。</p></div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>已覆盖时间线（带来源）</h2>
+    <ul>
+      {NEWS_TIMELINE.map(([d, e]) => <li><span class="tag">{d}</span> {e}</li>)}
+    </ul>
+    <p class="note">第一条来自 MotionBricks README 的 News 一节；其余来自 GR00T-WholeBodyControl 发布说明。链接见<a href="/zh/news/">新闻页</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>联系</h2>
+    <p>发现死链、过期说法或该补的来源？联系<em>本站</em>的维护者：<a href="mailto:hello@motionbricks.wiki">hello@motionbricks.wiki</a>——这是指南自己的地址，不是 NVIDIA 联系方式，也不是 MotionBricks bug 的支持渠道。那些请用官方仓库与 <a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a>。我们每封都读，错了就改。</p>
+  </section>
+</Base>

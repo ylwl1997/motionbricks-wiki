@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Generate public/sitemap.xml from dist/ HTML files (static routes only)."""
 import os
-import re
 from datetime import date
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -16,6 +15,12 @@ PRIORITY = {
     "/gr00t-sonic/": "0.6", "/news/": "0.6", "/community/": "0.5",
     "/about/": "0.5", "/es/": "0.6", "/ja/": "0.6",
 }
+# Chinese mirrors get a slightly lower priority than the EN original.
+ZH = {"/zh/": "0.9", "/zh/setup/": "0.8", "/zh/ue5/": "0.7", "/zh/unity/": "0.7",
+      "/zh/g1-demo/": "0.7", "/zh/architecture/": "0.6", "/zh/training/": "0.6",
+      "/zh/styles/": "0.6", "/zh/nvidia/": "0.7", "/zh/assets/": "0.5",
+      "/zh/gr00t-sonic/": "0.5", "/zh/news/": "0.5", "/zh/community/": "0.4",
+      "/zh/about/": "0.4"}
 
 urls = []
 for dirpath, dirnames, filenames in os.walk(DIST):
@@ -31,8 +36,9 @@ urls.sort()
 lines = ['<?xml version="1.0" encoding="UTF-8"?>',
          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
 for p in urls:
-    prio = PRIORITY.get(p, "0.5" if p.startswith("/blog/") else "0.4")
-    lines.append(f"  <url><loc>{SITE}{p}</loc><lastmod>{TODAY}</lastmod><changefreq>{'weekly' if p.startswith('/news') or p.startswith('/blog') else 'monthly'}</changefreq><priority>{prio}</priority></url>")
+    prio = PRIORITY.get(p) or ZH.get(p) or ("0.5" if p.startswith("/blog/") or p.startswith("/zh/blog/") else "0.4")
+    freq = "weekly" if ("/news" in p or "/blog" in p) else "monthly"
+    lines.append(f"  <url><loc>{SITE}{p}</loc><lastmod>{TODAY}</lastmod><changefreq>{freq}</changefreq><priority>{prio}</priority></url>")
 lines.append("</urlset>\n")
 
 out = os.path.join(DIST, "sitemap.xml")

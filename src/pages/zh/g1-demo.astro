@@ -1,0 +1,63 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, GIFS, KEYBINDS_MOVE, KEYBINDS_STYLE, KEYBIND_NOTE, KEY_DEFAULT } from "../../data/site.js";
+const faqItems = [
+  { q: "MotionBricks G1 演示怎么运行？", a: "完成安装后，在 motionbricks/ 目录运行：DISPLAY=:1 python scripts/interactive_demo_g1.py。MuJoCo 查看器会打开并加载 Unitree G1；用 WASD 移动，用字母键切换动作风格，按住鼠标左键旋转相机。" },
+  { q: "G1 演示有哪些按键？", a: "WASD 相对相机移动。风格键：V 慢走、Z 手爬、X 行走拳击、B 肘爬、R 潜行、T 受伤行走、C 蹲伏潜行、E 快乐舞步、F 僵尸步、G 持枪行走、Q 惊恐行走。不按风格键时：未按移动键为 idle（待机），按 WASD 为 walk（行走）。" },
+  { q: "为什么爬行风格不能侧向移动？", a: "这是官方声明的限制，不是你的安装问题：爬行模式（Z 手爬、B 肘爬）在预览版中目前不支持仅侧向方向。" },
+  { q: "演示窗口打开了但按键没反应。", a: "在 Linux 上保持终端聚焦而不是 MuJoCo 窗口（X11 按键抓取方案），并确保已安装 python-xlib。在 Wayland、macOS 或 Windows 上部分 MuJoCo 快捷键与控制键冲突——同样用终端聚焦方案。" },
+];
+---
+<Base
+  title="MotionBricks G1 演示：键盘控制、风格键位、首次运行（中文）| MotionBricks.wiki"
+  description="运行交互式 MotionBricks G1 演示：确切命令、完整 WASD + 11 风格键位表（僵尸步、爬行、拳击……）、相机操作，以及按键无效的修复方法。"
+  path="/g1-demo/"
+  lang="zh"
+  crumbs={[{ label: "G1 演示", href: "/zh/g1-demo/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">指南 · 控制方式与 README 逐字一致</p>
+      <h1>交互式 G1 演示，<span style="color:var(--accent)">逐键说明</span></h1>
+      <p class="lede">感受 15,000 FPS 动作模型最快的方式：MuJoCo 查看器里的 Unitree G1 实时响应你的键盘。前置条件：完成<a href="/zh/setup/">安装</a>并拥有真实权重（不是 1 KB 指针）。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>启动</h2>
+    <pre class="code-block"><code>DISPLAY=:1 python scripts/interactive_demo_g1.py</code></pre>
+    <figure style="max-width:520px">
+      <img src={GIFS.interactiveDemo} alt="MotionBricks 交互式演示录屏：G1 人形机器人在 MuJoCo 查看器中响应键盘指令" loading="lazy" width="480" height="270" />
+      <figcaption>官方演示录屏，由 NVIDIA 托管。</figcaption>
+    </figure>
+    <p>按住鼠标左键拖动改变相机观察方向；右键拖动旋转相机，同时改变 WASD 的方向含义（移动相对相机）。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>移动控制</h2>
+    <table>
+      <thead><tr><th>按键</th><th>动作</th></tr></thead>
+      <tbody>{KEYBINDS_MOVE.map(([k, a]) => <tr><td><span class="kbd">{k}</span></td><td>{a}</td></tr>)}</tbody>
+    </table>
+    <p>{KEY_DEFAULT}</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>动作风格（11 个按键）</h2>
+    <p>按风格键，再用 WASD 控制方向。每个风格由同一个模型零样本生成——代码中无需逐个切换：</p>
+    <table>
+      <thead><tr><th>按键</th><th>风格</th></tr></thead>
+      <tbody>{KEYBINDS_STYLE.map(([k, a]) => <tr><td><span class="kbd">{k}</span></td><td>{a}</td></tr>)}</tbody>
+    </table>
+    <div class="note"><strong>官方限制：</strong> {KEYBIND_NOTE}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>观看风格动起来</h2>
+    <p>官方图库 GIF 展示了每个风格族的样子——见<a href="/zh/styles/">完整风格库</a>或直达<a href={OFFICIAL.projectPage} rel="noopener">项目页演示</a>。</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="演示常见问题" />
+  </div>
+</Base>

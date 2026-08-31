@@ -1,0 +1,48 @@
+---
+export const title = "MotionBricks 对比 Kimodo：实时运行时还是离线生成？ | MotionBricks.wiki";
+export const description = "NVIDIA 两个常被混淆的动作生成项目：MotionBricks 在运行时实时生成动作，Kimodo 被官方 README 称为离线兄弟项目。基于官方来源的中文对比，不引用 Kimodo 侧数字。";
+const slug = "motionbricks-vs-kimodo";
+import Base from "../../../layouts/Base.astro";
+import { OFFICIAL, RELATED, GIFS } from "../../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`} lang="zh"
+  crumbs={[{ label: "新闻", href: "/zh/news/" }, { label: "MotionBricks vs Kimodo", href: `/zh/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">对比 · 非官方社区指南</p>
+      <h1>MotionBricks 对比 Kimodo：<span style="color:var(--accent)">需要实时动作时，和不需要时</span></h1>
+      <p class="lede">两个项目都出自 NVIDIA，都生成人形动作，所以帖子里两个名字经常被混着写。MotionBricks 的 README 用一句话界定了二者的关系——这是分工，不是竞争。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>官方 README 怎么说</h2>
+    <p>在 <a href={OFFICIAL.repo} rel="noopener">MotionBricks README</a> 的 Related Work 一节，Kimodo 只有一句话：<em>“A sibling project focused on offline motion generation, complementary to MotionBricks' real-time runtime.”</em>（一个专注于离线动作生成的兄弟项目，与 MotionBricks 的实时运行时互补）。这就是 MotionBricks 仓库内对它的全部官方定位：兄弟、离线、互补。关于 Kimodo 更具体的内容，请看<a href={RELATED.kimodoPage} rel="noopener">它的项目页</a>或<a href={RELATED.kimodoRepo} rel="noopener">它的 GitHub 仓库</a>——本站刻意不把那边任何数字搬进这篇对比。</p>
+    <figure style="max-width:560px">
+      <img src={GIFS.kimodoTeaser} alt="Kimodo 宣传 GIF，出自 MotionBricks README 的 Related Work 一节" loading="lazy" width="480" height="270" />
+      <figcaption>Kimodo 宣传图——托管在 NVIDIA 仓库中，本站只做链接不做镜像。</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>真正的分界：动作在什么时候生成</h2>
+    <p>MotionBricks <strong>在你交互的同时、于运行时生成动作</strong>。官方交互演示里，你用 WASD 加 11 个风格键操控一台 Unitree G1，按键一变，模型就合成后续帧——官方项目页给出的指标是 15,000 FPS 生成吞吐、2 ms 延迟。整套设计（潜在骨干加 smart primitives）就是为了让这个循环便宜到能实时跑，无论动画绑定还是持续接收指令的机器人。</p>
+    <p>Kimodo 在这条线的另一侧。NVIDIA 措辞里的“离线”，指动作在使用前就生产好，而不是在实时输入流下生成——经典的先烘焙再使用流程，输出质量比响应时间更重要。Kimodo 擅长什么请读<a href={RELATED.kimodoPage} rel="noopener">它的项目页</a>；本文只负责划清边界。</p>
+    <table>
+      <thead><tr><th>维度</th><th>MotionBricks</th><th>Kimodo</th></tr></thead>
+      <tbody>
+        <tr><td>生成时机</td><td>运行时、交互式</td><td>离线、使用前</td></tr>
+        <tr><td>延迟压力</td><td>毫秒级预算；官方数字为 2 ms</td><td>没有实时交互循环要满足</td></tr>
+        <tr><td>官方关系</td><td>—</td><td>README 称其为互补的兄弟项目</td></tr>
+        <tr><td>发布位置</td><td><a href={OFFICIAL.repo} rel="noopener">GR00T-WholeBodyControl 单仓库</a>（预览版）</td><td>独立的 <a href={RELATED.kimodoRepo} rel="noopener">GitHub 仓库</a></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block wrap">
+    <h2>该伸手拿哪个</h2>
+    <p>如果动作要响应尚未可知的东西——玩家按键、机器人纠正路径、角色中途换步态——离线路线会牺牲掉这份响应性，而这正是 MotionBricks 要解决的问题。<a href="/zh/setup/">安装指南</a>带你亲手跑起交互式 G1 演示；用键盘玩二十分钟，运行时与离线的区别通常就直觉化了。</p>
+    <p>如果你只是往时间线里填已经定稿的动画，导出后不再改动，“离线”不是贬义——它是正确的约束，先烘焙再导入是常规管线，<a href="/zh/unity/">Unity 桥接页</a>上就画着这样一条。真正错的做法，是让任一项目背离它自己的设计意图去用。</p>
+    <div class="note">值得养成一个习惯：<a href="/zh/">本站</a>把每个数字都链接到说出它的页面。社区帖经常把两个项目的说法合并成一个想象中的模型。MotionBricks 的<a href={OFFICIAL.projectPage} rel="noopener">项目页</a>和 Kimodo 的<a href={RELATED.kimodoPage} rel="noopener">项目页</a>是两份不同的文档。</div>
+  </section>
+</Base>

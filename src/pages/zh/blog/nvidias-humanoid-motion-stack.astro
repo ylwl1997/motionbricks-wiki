@@ -1,0 +1,52 @@
+---
+export const title = "NVIDIA 人形动作技术栈地图：MotionBricks 到底站在哪 | MotionBricks.wiki";
+export const description = "MotionBricks、GEAR-SONIC、BONES-SEED、SOMA Retargeter、Kimodo——六个常被合并成一个的组件。GR00T 全身控制技术栈逐层地图，每个盒子都链接 NVIDIA 官方出处，含 SONIC 三 checkpoint 表。";
+const slug = "nvidias-humanoid-motion-stack";
+import Base from "../../../layouts/Base.astro";
+import { OFFICIAL, RELATED, GIFS, SONIC_MODELS, SONIC_COMMON, SONIC_CAVEAT, NEWS_TIMELINE } from "../../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`} lang="zh"
+  crumbs={[{ label: "新闻", href: "/zh/news/" }, { label: "技术栈地图", href: `/zh/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">全景 · GR00T Whole-Body Control</p>
+      <h1>NVIDIA 人形动作技术栈，<span style="color:var(--accent)">一块一块拆</span></h1>
+      <p class="lede">MotionBricks 不是孤立存在的，这正是报道总把它写拧的原因。<a href={OFFICIAL.parentRepo} rel="noopener">GR00T Whole-Body Control</a> 是一组分层——生成、控制、数据、重定向——每层都有自己的仓库或页面。下面是地图，每个盒子都链接到 NVIDIA 自己描述它的地方。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>各层</h2>
+    <ul>
+      <li><strong>MotionBricks —— 动作生成。</strong><a href={OFFICIAL.projectPage} rel="noopener">项目页</a>上描述的实时运行时；README 称它与 GEAR-SONIC 一起，是“锚定”GR00T WBC 计划的两个项目之一——从指令生成动作帧的那一层。</li>
+      <li><strong>GEAR-SONIC —— 全身控制。</strong>控制器层，见其<a href={RELATED.sonicPage} rel="noopener">项目页</a>，与 MotionBricks 同在 GR00T-WBC 单仓库（<a href={RELATED.sonicRepo} rel="noopener">GitHub</a>）：消费参考动作并以 50 Hz 在机器人上执行。三个 checkpoint 的细节见下表。</li>
+      <li><strong>GR00T N1.5 / N1.6 decoupled WBC。</strong>GR00T N 系列模型线与同一生态里的解耦全身控制工作搭配；本帖只点名位置——当前公开内容以 <a href={RELATED.sonicRepo} rel="noopener">GR00T-WBC 仓库</a>为准，别信第三方转述。</li>
+      <li><strong>BONES-SEED —— 数据。</strong>35 万段剪辑声明背后的训练语料：README 指向 <a href={RELATED.bonesDatasets} rel="noopener">bones.studio/datasets</a>，另有 <a href={RELATED.bonesSeed} rel="noopener">Hugging Face 数据集页</a>。下载实操见<a href="/zh/blog/bones-seed-dataset/">这篇</a>。</li>
+      <li><strong>SOMA Retargeter —— 转换管线。</strong>基于 Newton 的求解器，把 SOMA 动捕重定向到 Unitree G1，产出 MotionBricks 的训练数据（<a href={RELATED.somaRetargeter} rel="noopener">GitHub</a>）。</li>
+      <li><strong>Kimodo —— 离线兄弟项目。</strong>按 README Related Work 一节，“focused on offline motion generation, complementary to MotionBricks' real-time runtime”（<a href={RELATED.kimodoPage} rel="noopener">项目页</a>、<a href={RELATED.kimodoRepo} rel="noopener">仓库</a>）。</li>
+    </ul>
+    <div class="gifgrid">
+      <figure><img src={GIFS.teaserRobotics} alt="MotionBricks 机器人宣传图：Unitree G1 上生成的动作" loading="lazy" width="640" height="360" /><figcaption>生成层——G1 上的 MotionBricks。</figcaption></figure>
+      <figure><img src={GIFS.sonicTeaser} alt="GEAR-SONIC 宣传图，出自官方 README Related Work 一节" loading="lazy" width="640" height="360" /><figcaption>控制层——GEAR-SONIC。</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>SONIC 的三个 checkpoint，直接摘自模型卡</h2>
+    <p>{SONIC_COMMON}</p>
+    <table>
+      <thead><tr><th>Checkpoint</th><th>参考 lookahead</th><th>设计用途</th></tr></thead>
+      <tbody>{SONIC_MODELS.map((m) => <tr><td><strong>{m.name}</strong>{m.link && <> · <a href={m.link} rel="noopener">文件</a></>}</td><td>{m.lookahead}</td><td>{m.use}</td></tr>)}</tbody>
+    </table>
+    <div class="warn">{SONIC_CAVEAT}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>发布时间线</h2>
+    <table>
+      <thead><tr><th>日期</th><th>发布内容</th></tr></thead>
+      <tbody>{NEWS_TIMELINE.map(([d, e]) => <tr><td>{d}</td><td>{e}</td></tr>)}</tbody>
+    </table>
+    <p>值得注意的模式：日期交错出现。这段时间窗口里 MotionBricks 的预览（2026-04-27）最先落地；WBC 仓库随后回应以 VLA 工作流、低延迟 checkpoint 与 v1.1。技术栈整体推进——这正是“只有生成层开不了机器人”的原因。想单看运行时这一块，见<a href="/zh/setup/">安装指南</a>；各层变动时，<a href="/zh/">本站索引的指南</a>会跟进。</p>
+  </section>
+</Base>

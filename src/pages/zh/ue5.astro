@@ -1,0 +1,69 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, GIFS, PROJ_IMAGES } from "../../data/site.js";
+const faqItems = [
+  { q: "有 MotionBricks 的 UE5 演示下载吗？", a: "NVIDIA 在官方项目页直接发布了 2:40 无剪辑 UE5 演示视频（4K，约 1.2 GB）的下载链接——人们常说的 motionbricks ue5 demo download 指的就是它。注意它是运行效果的视频，不是引擎安装包。公开预览版代码本身在 GR00T-WholeBodyControl GitHub 仓库里（MuJoCo runtime）；预览版没有 UE5 插件，官方路线图把完整机器人/引擎版发布定在 2026-04-27 预览之后约一个月。" },
+  { q: "能在 UE5 演示里与碰撞交互吗？", a: "整个演示完全不用碰撞检测——这正是官方的卖点。项目页声明：每个动作都由神经网络生成——没有脚部锁定、没有混合、没有碰撞检测、没有手写过渡。物体交互由智能物体代理关键帧处理：骨干网络补全接近、接触与跟随动作，而不是由物理求解器解析接触。" },
+  { q: "有 UE5 插件吗？", a: "诚实回答：公开预览版没有。2026-04-27 发布的预览只有 Python runtime、MuJoCo 交互式 G1 演示和训练代码；你在演示里看到的引擎侧接线只出现在论文与项目页中。官方路线图称完整发布（模型嵌入 GR00T WBC 机器人学表述、完整训练管线）目标在预览之后约一个月——在那之前，任何第三方插件下载都未经核实。" },
+  { q: "能把演示素材用在我自己的 Unreal 项目里吗？", a: "不能直接拿演示的素材：UE5 视频、网格与场景环境都是 NVIDIA 的。源代码是 Apache 2.0，权重受 NVIDIA Open Model License 约束；从公开仓库集成任何东西都遵循这些条款——本非官方指南只是转述，不替代它们。" },
+];
+---
+<Base
+  title="MotionBricks × UE5：演示、插件问题、碰撞误解 | MotionBricks.wiki"
+  description="官方 2:40 无剪辑 UE5 演示展示了什么、MotionBricks 演示下载链接在哪、目前有没有虚幻引擎插件、为什么物体交互不需要碰撞检测——全部基于官方来源。"
+  path="/ue5/"
+  lang="zh"
+  crumbs={[{ label: "UE5", href: "/zh/ue5/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">指南 · 区分事实与炒作</p>
+      <h1>MotionBricks 与虚幻引擎 5：<span style="color:var(--accent)">目前真正可用的东西</span></h1>
+      <p class="lede">搜索 motion bricks unreal engine 通常想找三样东西之一：演示视频、还不存在的插件、或碰撞问题。这里逐一给出官方来源的说法。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>无剪辑 UE5 演示</h2>
+    <p>NVIDIA 发布了一支 <strong>2:40 一镜到底的 UE5 演示</strong>，覆盖行业级游戏规模的导航与物体场景交互。它的头条也是它的技术主张：每个动作都来自神经模型——没有脚部锁定、没有混合、没有碰撞检测、没有手写过渡。官方页面称，据作者所知，这是第一个同时达到该质量、可控性、复杂度与完整性组合的神经模型。</p>
+    <div class="note">
+      <strong>演示下载（官方，仅视频）：</strong>项目页链接了 4K 文件（约 1.2 GB）——
+      <a href={OFFICIAL.demo4k} rel="noopener">aibm_runtime_main_demo_latest_art_v3.mp4</a>。下载前可先在
+      <a href={OFFICIAL.projectPage} rel="noopener">nvlabs.github.io/motionbricks</a> 在线观看；那个链接是唯一合法的来源。
+    </div>
+    <figure>
+      <img src={PROJ_IMAGES.overview} alt="MotionBricks 概览图：动画与机器人学的统一控制，来自官方项目页" loading="lazy" width="1200" height="630" />
+      <figcaption>官方概览——动画与机器人学的统一控制。由 NVIDIA 托管，本站未镜像。</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>有 UE5 插件吗？预览版没有</h2>
+    <p><a href={OFFICIAL.repo} rel="noopener">公开预览</a>（2026-04-27）发布的是 Python runtime，带基于 MuJoCo 的交互式 G1 演示与训练代码。你在演示里看到的引擎侧内容——在 UE5 内部"像搭积木一样即插即用"地接线智能图元——只出现在论文和项目页里，<strong>仓库中没有公开的 UE5 插件</strong>。官方路线图称完整发布（模型嵌入 GR00T WBC 的机器人学表述、完整训练管线）目标在预览之后约一个月。任何第三方 "MotionBricks UE5 plugin download" 在指向 NVIDIA 官方仓库之前，都应视为未经核实。</p>
+    <h3>现在想集成，老实说有三种做法</h3>
+    <ul>
+      <li><strong>运行时从 Python 消费动作。</strong>模型层输出动作帧；桥接到 UE5 需要自建传输（socket / 共享内存）喂给动画蓝图或 Motion Warping——这部分工程得自己写。</li>
+      <li><strong>离线烘焙用于原型。</strong>用训练/推理栈生成片段，再导入烘焙动画。你会失去实时响应的特性，但留在常规动画管线里。</li>
+      <li><strong>等完整发布。</strong>路线图是公开的；仓库变化时本站会跟进更新。</li>
+    </ul>
+  </section>
+
+  <section class="block wrap">
+    <h2>"能在 UE5 里与碰撞交互吗？"</h2>
+    <p>这个搜索词的问法反了。演示中的物体（拾剑、跳长凳、坐下）由<strong>智能物体驱动：代理关键帧指定交互</strong>，骨干网络合成接近、接触与跟随动作，且每次运行都有自然变化。没有碰撞求解器可以开关——论文的立场是接触行为是学出来的，不是模拟出来的。如果你的游戏需要真实的物理响应（冲击、布娃娃、可破坏物），MotionBricks 是动作生成器，不是物理引擎。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>智能物体演示（官方 GIF）</h2>
+    <div class="gifgrid">
+      <figure><img src={GIFS.objPickupSword} alt="G1 风格角色俯身拾起一把剑并站起——生成式交互" loading="lazy" width="480" height="270" /><figcaption>拾剑——官方 GIF</figcaption></figure>
+      <figure><img src={GIFS.objJumpBench} alt="角色以自然的接近与落地动作跳过一条长凳" loading="lazy" width="480" height="270" /><figcaption>跳过长凳——官方 GIF</figcaption></figure>
+      <figure><img src={GIFS.objSitting} alt="角色在物体上坐下，由智能物体代理关键帧生成" loading="lazy" width="480" height="270" /><figcaption>坐下——官方 GIF</figcaption></figure>
+      <figure><img src={GIFS.objInteractiveAuthoring} alt="智能物体的交互式创作流程" loading="lazy" width="480" height="270" /><figcaption>交互式创作——官方 GIF</figcaption></figure>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="UE5 常见问题" />
+  </div>
+</Base>

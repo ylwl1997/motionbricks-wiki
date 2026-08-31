@@ -1,0 +1,89 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import {
+  OFFICIAL, RELATED, GIFS,
+  SONIC_MODELS, SONIC_COMMON, SONIC_CAVEAT, NEWS_TIMELINE,
+} from "../../data/site.js";
+
+// 父仓库新闻源里的 SONIC 相关条目（site.js 原文行）。
+const sonicNews = NEWS_TIMELINE.filter(([_, text]) =>
+  /SONIC|VLA|teleop/i.test(text));
+
+const faqItems = [
+  { q: "SONIC 和 MotionBricks 是什么关系？", a: "SONIC（以 GEAR-SONIC 发布）是 NVIDIA 面向 Unitree G1 的全身控制控制器，与 MotionBricks 一起发布在同一个 GR00T-WholeBodyControl 仓库里。README 的 Related Work 一节写明：GEAR-SONIC 与 MotionBricks 共同构成 NVIDIA GR00T Whole-Body Control 计划的基石——MotionBricks 生成动作，SONIC 在机器人上跟踪并执行。" },
+  { q: "应该用哪个 SONIC checkpoint？", a: "通用动作跟踪、规划、遥操作与现有部署兼容用最初的 Default SONIC；追求响应式遥操作与 VLA 执行用低延迟 checkpoint（4 帧，约 80 ms 参考 lookahead）；需要航向稳定的遥操作用 SONIC v1.1（机器人航向归一化目标朝向、腕部姿态增强）。三个都在 nvidia/GEAR-SONIC Hugging Face 仓库里。" },
+  { q: "80 ms lookahead 指的是总共 80 ms 的遥操作延迟吗？", a: "不是，模型卡说得非常明确：lookahead 值描述的是给控制器的参考视野（reference horizon），不是端到端延迟——后者还包括感知、网络、预处理与推理。任何把 lookahead 表当成 SONIC「延迟」来引用的帖子都是在误读。" },
+];
+---
+<Base
+  title="MotionBricks 与 SONIC（GEAR-SONIC）：GR00T 全身控制双子 | MotionBricks.wiki"
+  description="SONIC 在 NVIDIA GR00T Whole-Body Control 里如何与 MotionBricks 配合：三个 GEAR-SONIC checkpoint 与 lookahead（200/80/200 ms）、50 Hz 下的 64 维潜在 token、下载位置，以及 lookahead 不等于延迟的说明。"
+  path="/gr00t-sonic/"
+  lang="zh"
+  crumbs={[{ label: "SONIC", href: "/zh/gr00t-sonic/" }]}
+  ogImage={GIFS.sonicTeaser}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">技术栈的机器人侧 · 事实来自 GR00T-WBC 模型卡</p>
+      <h1>SONIC：<span style="color:var(--accent)">MotionBricks 的动作</span>遇上真 G1</h1>
+      <p class="lede">MotionBricks 回答「这个角色下一步该做什么？」。GEAR-SONIC 回答「让一台 30 kg 的机器人真的做到」。两者发布在同一个仓库里，README 明确说它们共同构成 NVIDIA GR00T Whole-Body Control 计划的基石。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>两个项目如何关联</h2>
+    <p>README 的 Related Work 一节用一句话说清：<em>「Together with MotionBricks, GEAR-SONIC anchors NVIDIA's GR00T Whole-Body Control initiative.」</em>（与 MotionBricks 一起，GEAR-SONIC 奠定了 NVIDIA 的 GR00T Whole-Body Control 计划。）落到实处的含义是：一个共享单仓库（<a href={OFFICIAL.parentRepo} rel="noopener">NVlabs/GR00T-WholeBodyControl</a>），MotionBricks 作动作生成层（<a href="/zh/architecture/">潜在模型怎么工作</a>），SONIC 作跟踪控制器，把参考动作变成 Unitree G1 上的电机行为。</p>
+    <figure style="max-width:520px">
+      <img src={GIFS.sonicTeaser} alt="GEAR-SONIC 片头：Unitree G1 执行由 SONIC 控制器跟踪的全身动作" loading="lazy" width="480" height="270" />
+      <figcaption>共享素材文件夹里的官方 GEAR-SONIC 片头 GIF。<a href={GIFS.sonicTeaser} rel="noopener">打开原件</a></figcaption>
+    </figure>
+    <p>官方 SONIC 来源：<a href={RELATED.sonicPage} rel="noopener">项目页</a> · <a href="https://huggingface.co/nvidia/GEAR-SONIC" rel="noopener">Hugging Face 上的 nvidia/GEAR-SONIC</a> · <a href={OFFICIAL.parentRepo} rel="noopener">父仓库</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>三个 checkpoint</h2>
+    <p>逐字摘自 GR00T-WBC 模型卡——每个 checkpoint 都在 <code>nvidia/GEAR-SONIC</code> Hugging Face 仓库里：</p>
+    <table>
+      <thead><tr><th>Checkpoint</th><th>参考 lookahead</th><th>用途</th><th>下载</th></tr></thead>
+      <tbody>
+        {SONIC_MODELS.map((m) => (
+          <tr>
+            <td><strong>{m.name}</strong></td>
+            <td>{m.lookahead}</td>
+            <td>{m.use}</td>
+            <td>{m.link
+              ? <a href={m.link} rel="noopener">nvidia/GEAR-SONIC · {m.link.split("/tree/main/")[1]}</a>
+              : <a href="https://huggingface.co/nvidia/GEAR-SONIC" rel="noopener">nvidia/GEAR-SONIC · main</a>}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <div class="note"><strong>共同规格：</strong> {SONIC_COMMON}</div>
+    <div class="warn"><strong>模型卡原话的提醒：</strong> {SONIC_CAVEAT}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>SONIC 在发布时间线里</h2>
+    <p>父仓库新闻源中与 SONIC 相关的条目（完整时间线见<a href="/zh/news/">新闻页</a>）：</p>
+    <ul>
+      {sonicNews.map(([date, text]) => (
+        <li><strong>{date}</strong> — {text}</li>
+      ))}
+    </ul>
+    <p style="color:var(--ink-2)">MotionBricks 自己的 2026-04-27 预览发布是这条合并叙事的起点；上面这些 checkpoint 行是之后在 SONIC 一侧陆续到来的。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>接着读什么</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/zh/nvidia/">MotionBricks 与 NVIDIA 技术栈</a></h3><p>GR00T 各部件（以及哪些不属于它）如何归类。</p></div>
+      <div class="card"><h3><a href="/zh/architecture/">架构</a></h3><p>这对组合中生成侧的 VQVAE / pose / root 模型。</p></div>
+      <div class="card"><h3><a href="/zh/news/">新闻时间线</a></h3><p>两份 README 里每一条带日期的条目，附来源。</p></div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="SONIC 常见问题" />
+  </div>
+</Base>

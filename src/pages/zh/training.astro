@@ -1,0 +1,71 @@
+---
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, RELATED } from "../../data/site.js";
+---
+<Base
+  title="训练 MotionBricks：命令、数据集与发布状态 | MotionBricks.wiki"
+  description="训练 MotionBricks：VQVAE、pose 与 root 模型的官方命令，合成数据默认值用于验证管线，BONES-SEED 真实数据集，以及路线图上的发布状态。"
+  path="/training/"
+  lang="zh"
+  crumbs={[{ label: "训练", href: "/zh/training/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">指南 · 命令逐字来自官方 README</p>
+      <h1>训练 MotionBricks：<span style="color:var(--accent)">三条脚本，一条今天就能验证的管线</span></h1>
+      <p class="lede">预览版发布了全部三个模型组件的训练代码——VQVAE 分词器、pose 模型与 root 模型——默认用合成数据，让你在碰真实数据集之前就能端到端跑通整个流程。下方命令原样抄自 README；我们没有改写或重测。</p>
+      <p style="margin-top:20px"><a class="btn" href="/zh/setup/">先完成安装——训练指南假设环境可用</a></p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>三条训练命令</h2>
+    <p>在克隆的 <code>motionbricks/</code> 目录里运行。README 注明脚本"默认使用合成数据，并从 <code>out/</code> 中保存的 checkpoint 加载模型配置"：</p>
+    <pre class="code-block"><code># Train the VQVAE (motion tokenizer)
+python scripts/train_vqvae.py
+
+# Train the pose model (requires pretrained VQVAE checkpoint)
+python scripts/train_pose.py
+
+# Train the root model (no VQVAE needed)
+python scripts/train_root.py</code></pre>
+    <p>顺序只有一次重要：pose 脚本需要 VQVAE checkpoint（<code>out/</code> 里的预训练版，或你自己刚训练出来的），root 模型则独立训练——README 注释白纸黑字写着。每个脚本对应哪个组件，见<a href="/zh/architecture/">架构页</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>合成数据：先验证管线</h2>
+    <p>当前所有训练脚本都默认<strong>合成数据</strong>（见 <code>motionbricks/data/synthetic_dataset.py</code>），"以便在不需要真实数据集的情况下端到端验证完整训练管线"（README）。实际含义：</p>
+    <ul>
+      <li>可以不下载任何 BONES-SEED 数据，先确认你的环境、配置和训练循环能产出 checkpoint。</li>
+      <li>合成运行验证的是管道，不是质量——一次跑完的合成训练只能说明代码在你的 CUDA 机器上能跑，说明不了动作保真度。</li>
+      <li>真实数据路径上的复现实验按 README 说法"正在进行中"。</li>
+    </ul>
+  </section>
+
+  <section class="block wrap">
+    <h2>真实数据集</h2>
+    <p>README 声明预训练 checkpoint 所用的数据集可在 <a href={RELATED.bonesDatasets} rel="noopener">bones.studio/datasets</a> 下载——完整动作数据集都在那里。发布模型背后的训练语料是 BONES-SEED（细节与数字注意事项见<a href="/zh/assets/">素材页</a>）。</p>
+    <p>在投入带宽之前想先看个轻量参考：四个文件合计约 2.2 GB 的 checkpoint 大小列在<a href="/zh/setup/">安装指南</a>里。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>自己的数据或新机器人</h2>
+    <p>仓库里有两份官方文档回答本指南刻意不编造答案的定制问题：</p>
+    <div class="grid">
+      <div class="card">
+        <h3><a href={OFFICIAL.motionReprDocs} rel="noopener">Motion representation 文档</a></h3>
+        <p>"动作特征表示、骨架系统、坐标约定、归一化与特征计算管线的细节"（README 对 <code>docs/motion_representation.md</code> 的描述）。</p>
+      </div>
+      <div class="card">
+        <h3><a href={OFFICIAL.customDatasetDocs} rel="noopener">添加你自己的数据集</a></h3>
+        <p>"用自己的动作数据训练 MotionBricks 并适配新机器人的分步指南"（README 对 <code>docs/adding_your_own_dataset.md</code> 的描述）。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>完整发布状态——路线图实际说了什么</h2>
+    <p>剩下的拼图是与机器人学整合的完整管线。逐字引用 README 的路线图条目：</p>
+    <div class="warn">&quot;Full training pipeline inside <a href={RELATED.sonicRepo} rel="noopener">GR00T Whole-Body Control</a>&#39;s GEAR-SONIC pipeline — targeted for approximately one month out; reproducibility experiments are already in flight.&quot;</div>
+    <p>本指南坚持两点澄清："约一个月后"是从 2026-04-27 预览公告算起的，而且它是官方路线图的<em>估计</em>，不是发布承诺——别处引用的任何具体日期都当猜测处理。真实进度看<a href="/zh/news/">新闻页</a>和<a href={OFFICIAL.repo} rel="noopener">官方仓库</a>；训练管线在哪接入 SONIC 部署，见<a href="/zh/gr00t-sonic/">GR00T-SONIC 页</a>。</p>
+  </section>
+</Base>
