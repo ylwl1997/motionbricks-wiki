@@ -1,0 +1,156 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL } from "../data/site.js";
+const faqItems = [
+  { q: "Why does the installation page insist on exact TensorRT versions?", a: "The official docs carry a danger warning: you must use the exact TensorRT versions listed (10.13 on x86_64, 10.7 on Jetson with JetPack 6). Using a different version is known to produce incorrect inference results — the planner will output wrong motion, which can cause dangerous robot behavior." },
+  { q: "Do I need to flash my G1's onboard Orin to JetPack 6 before deploying?", a: "For G1 onboard deployment, the official docs require the onboard Orin to be upgraded to JetPack 6 to support TensorRT. The flashing guide (docs/source/references/jetpack6.md) covers the upgrade; the Jetson TensorRT 10.7 TAR package requires it." },
+  { q: "Native install or Docker — which should I pick?", a: "Native development is recommended by the official docs: direct system installation, faster builds, production-ready. The Docker image is a ROS2 development environment (ROS2 Humble, x86_64 and Jetson) — use it if you plan ROS2-based input/output. Both paths run the same inside-container/terminal commands: source scripts/setup_env.sh, then just build." },
+  { q: "What exactly does deploy.sh run on the real robot?", a: "From gear_sonic_deploy/, ./deploy.sh --input-type zmq_manager real starts the C++ deployment stack: TensorRT policy inference (encoder → decoder) plus the kinematic planner, with ZMQ manager input/output. In simulation, the same command uses the sim argument instead of real and pairs with run_sim_loop.py." },
+];
+---
+<Base
+  title="SONIC deployment install: TensorRT, JetPack 6, native or Docker, deploy.sh | MotionBricks.wiki"
+  description="SONIC deployment install: Ubuntu 20.04/22.04/24.04, exact TensorRT versions, JetPack 6, native or Docker build, and deploy.sh commands — verbatim from the official GR00T-WBC docs."
+  path="/installation-deploy/"
+  crumbs={[{ label: "Install & deploy SONIC", href: "/installation-deploy/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Deployment guide · commands verbatim</p>
+      <h1>Install and deploy SONIC: <span style="color:var(--accent)">TensorRT first, then build</span></h1>
+      <p class="lede">Deploying the SONIC whole-body controller on the Unitree G1 is a C++ + TensorRT build with one non-negotiable rule: install the exact TensorRT version before anything else. Everything below is transcribed from the official <a href={OFFICIAL.docs.installationDeploy} rel="noopener">Installation (Deployment)</a> and <a href={OFFICIAL.docs.deploymentCode} rel="noopener">C++ Deployment Program Flow</a> docs.</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="On this page">
+      <p class="tt">On this page</p>
+      <a href="#prereqs">Prerequisites</a>
+      <a href="#tensorrt">TensorRT table</a>
+      <a href="#danger">Danger warning</a>
+      <a href="#clone">Clone + LFS</a>
+      <a href="#native">Native install</a>
+      <a href="#docker">Docker (ROS2)</a>
+      <a href="#deploy">deploy.sh</a>
+      <a href="#planner">Planner ONNX</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div>
+      <section id="prereqs" class="block">
+        <h2>Prerequisites</h2>
+        <ul>
+          <li><strong>Ubuntu 20.04/22.04/24.04</strong> or other Debian-based Linux distributions</li>
+          <li><strong>CUDA Toolkit</strong> (for GPU acceleration)</li>
+          <li><strong>TensorRT</strong> (for inference optimization) — install this first!</li>
+          <li><strong>JetPack 6</strong> (for onboard deployment)</li>
+          <li><strong>Python 3.8+</strong></li>
+          <li><strong>Git with LFS support</strong></li>
+        </ul>
+        <p>Download TensorRT from <a href="https://developer.nvidia.com/tensorrt/download/10x" rel="noopener">NVIDIA Developer</a>. This is the deployment-side install; training has its own path — see <a href={OFFICIAL.docs.trainingData} rel="noopener">Training Data</a> and <a href={OFFICIAL.docs.training} rel="noopener">Training</a> for the Isaac Lab setup.</p>
+      </section>
+
+      <section id="tensorrt" class="block">
+        <h2>TensorRT versions (verbatim)</h2>
+        <table>
+          <thead><tr><th>Platform</th><th>TensorRT Version</th></tr></thead>
+          <tbody>
+            <tr><td>x86_64 (Desktop)</td><td><strong>10.13</strong> (required)</td></tr>
+            <tr><td>Jetson / G1 onboard Orin</td><td><strong>10.7</strong> (required; requires JetPack 6 — <a href={OFFICIAL.docs.jetpack6} rel="noopener">flashing guide</a>)</td></tr>
+          </tbody>
+        </table>
+        <div class="note">Download the <strong>TAR</strong> package (not the DEB one) so you can extract TensorRT to any location. The archive is ~10 GB; consider using <code>pv</code> to monitor progress:</div>
+        <pre class="code-block"><code>sudo apt-get install -y pv
+pv TensorRT-*.tar.gz | tar -xz -f -</code></pre>
+        <p>Move the unzipped TensorRT to <code>~/TensorRT</code> (or similar) and add to your <code>~/.bashrc</code>:</p>
+        <pre class="code-block"><code>export TensorRT_ROOT=$HOME/TensorRT</code></pre>
+      </section>
+
+      <section id="danger" class="block">
+        <h2>Read this before installing</h2>
+        <div class="warn">
+          <strong>Danger:</strong> you <strong>must</strong> use the exact TensorRT versions listed above. Using a different version is known to produce incorrect inference results — the planner will output wrong motion, which can cause dangerous robot behavior.
+        </div>
+        <p>This warning is copied from the official docs. A wrong TensorRT build does not fail loudly — it silently degrades planner output, and on a real robot that is a safety problem, not a performance problem.</p>
+      </section>
+
+      <section id="clone" class="block">
+        <h2>Clone the repository</h2>
+        <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl
+git lfs pull          # make sure all large files are fetched</code></pre>
+        <p>The repo contains large binary assets (meshes, ONNX models); <code>git lfs pull</code> fetches the real bytes instead of pointer files. Full LFS guidance, including the MotionBricks checkpoint caveat, is on the <a href="/setup/">setup page</a>.</p>
+      </section>
+
+      <section id="native" class="block">
+        <h2>Native development (recommended)</h2>
+        <p><strong>Advantages:</strong> direct system installation, faster builds, production-ready. Prerequisites: basic development tools (cmake, git, etc.) and, optionally, ROS2 if you plan ROS2-based input/output.</p>
+        <div class="warn">For G1 onboard deployment, the onboard Orin must be upgraded to JetPack 6 to support TensorRT. Follow the <a href={OFFICIAL.docs.jetpack6} rel="noopener">flashing guide</a> for upgrading.</div>
+        <h3>1 · Install system dependencies</h3>
+        <pre class="code-block"><code>cd gear_sonic_deploy
+chmod +x scripts/install_deps.sh
+./scripts/install_deps.sh</code></pre>
+        <h3>2 · Set up environment</h3>
+        <pre class="code-block"><code>source scripts/setup_env.sh</code></pre>
+        <p>The setup script automatically configures the TensorRT environment and sets up all necessary paths. For convenience, add it to your shell profile:</p>
+        <pre class="code-block"><code>echo "source $(pwd)/scripts/setup_env.sh" >> ~/.bashrc</code></pre>
+        <h3>3 · Build the project</h3>
+        <pre class="code-block"><code>just build</code></pre>
+        <p>Other <code>just</code> commands: <code>just clean</code> (clean build artifacts) and <code>just --list</code> (show all available commands).</p>
+      </section>
+
+      <section id="docker" class="block">
+        <h2>Docker (ROS2 development environment)</h2>
+        <p>A unified Docker environment with ROS2 Humble, supporting x86_64 and Jetson platforms.</p>
+        <p><strong>Prerequisites:</strong> Docker installed and user added to docker group; <code>TensorRT_ROOT</code> environment variable set on host; for Jetson: JetPack 6.1+ (CUDA 12.6).</p>
+        <pre class="code-block"><code># 1. Add user to docker group (one-time setup)
+sudo usermod -aG docker $USER
+newgrp docker
+
+# 2. Set TensorRT path (add to ~/.bashrc for persistence)
+export TensorRT_ROOT=/path/to/TensorRT
+
+# 3. Launch container
+cd gear_sonic_deploy
+./docker/run-ros2-dev.sh</code></pre>
+        <p><strong>Options:</strong></p>
+        <pre class="code-block"><code>./docker/run-ros2-dev.sh               # Standard build (fast)
+./docker/run-ros2-dev.sh --rebuild     # Force rebuild
+./docker/run-ros2-dev.sh --with-opengl # Include OpenGL for visualization (RViz, Gazebo)</code></pre>
+        <p><strong>Architecture support:</strong> x86_64 — CUDA 12.4.1 (requires NVIDIA driver 550+); Jetson — CUDA 12.4.1 container on CUDA 12.6 host (forward compatible). Inside the container:</p>
+        <pre class="code-block"><code>source scripts/setup_env.sh # set up dependency
+just build                  # Build
+just --list                 # Show all commands</code></pre>
+        <p><strong>Troubleshooting:</strong> if you get "permission denied", ensure you're in the docker group; TensorRT must be set on the <strong>host</strong> before starting the container; for Jetson, run <code>source scripts/setup_env.sh</code> on the host first (sets jetson_clocks).</p>
+      </section>
+
+      <section id="deploy" class="block">
+        <h2>Run the deployment stack</h2>
+        <p>The C++ deployment binary is <code>gear_sonic_deploy</code>, launched via <code>deploy.sh</code>. Input interfaces: <code>keyboard | gamepad | gamepad_manager | zmq | zmq_manager | ros2 | manager</code>; output publishing via <code>--output-type zmq|ros2|all</code>.</p>
+        <pre class="code-block"><code>cd gear_sonic_deploy
+./deploy.sh --input-type zmq_manager real</code></pre>
+        <p>In simulation (MuJoCo), use the <code>sim</code> argument instead — the deploy binary connects to the sim loop instead of real hardware:</p>
+        <pre class="code-block"><code>./deploy.sh --input-type zmq_manager sim
+# Wait until you see "Init done"</code></pre>
+        <p>The default deployment uses the default SONIC checkpoint. For the low-latency or SONIC v1.1 checkpoints, point deploy.sh at the matching model prefix and observation config (per the model card <a href="/sonic-models/">comparison page</a>):</p>
+        <pre class="code-block"><code>./deploy.sh \
+--cp policy/low_latency/model \
+--obs-config policy/low_latency/observation_config.yaml \
+--input-type zmq_manager \
+real</code></pre>
+        <p>Data collection and VLA execution build on this stack — see <a href="/data-collection/">Data collection</a> and the <a href="/vla-workflow/">VLA workflow</a>.</p>
+      </section>
+
+      <section id="planner" class="block">
+        <h2>Planner ONNX file</h2>
+        <p>The kinematic planner runs alongside the policy when planner mode is enabled. It is an ONNX model passed with <code>--planner-file</code> (required for ROS2, <code>gamepad_manager</code>, and <code>zmq_manager</code> planner mode). Official example path:</p>
+        <pre class="code-block"><code>--planner-file planner/target_vel/V2/planner_sonic.onnx</code></pre>
+        <p>In the deployment flow the planner generates target animations (when enabled), the motion reader provides reference motions for non-planner mode, policy inference runs encoder → decoder on TensorRT, and results are published over ZMQ or ROS2. Sanity-check an ONNX model's input/output info with <code>just run freq_test policy/example/model_step_000000.onnx</code> — the reported frequency is not TensorRT inference speed. For VR teleoperation and the ZMQ manager modes, see the <a href="/teleoperation/">teleoperation guide</a>.</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Install & deploy FAQ" />
+  </div>
+</Base>

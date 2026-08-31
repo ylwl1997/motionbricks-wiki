@@ -1,0 +1,62 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL } from "../../data/site.js";
+const inputTypes = [
+  { t: "keyboard", d: "直接键盘输入（默认）" },
+  { t: "gamepad", d: "无线手柄" },
+  { t: "gamepad_manager", d: "手柄 + 快速切换 ZMQ/ROS2" },
+  { t: "zmq", d: "网络动作流式传输" },
+  { t: "zmq_manager", d: "在规划器与网络动作流之间动态切换" },
+  { t: "manager", d: "在键盘、手柄、ZMQ 与 ROS2 之间动态切换" },
+  { t: "ros2", d: "ROS2 话题控制（需要规划器，仅以 ROS2 支持编译时可用）" },
+];
+const faqItems = [
+  { q: "SONIC 技术栈支持哪些遥操作方式？", a: "C++ 部署二进制接受多种输入类型：keyboard（键盘）、gamepad（无线手柄）、gamepad_manager（手柄 + 快速切换 ZMQ/ROS2）、zmq（网络动作流）、zmq_manager（规划器与流式动作之间动态切换）、manager（键盘、手柄、ZMQ 与 ROS2 之间动态切换）、ros2（ROS2 话题控制，需要规划器）。VR 全身遥操作使用 PICO 头显，pico_manager 流式程序把 SMPL 姿态经 ZMQ 发布。" },
+  { q: "ZMQ 在遥操作里起什么作用？", a: "ZMQ 承载实时动作流。用 --input-type zmq 时，部署二进制订阅姿态话题（默认端口 5556，话题 pose）；用 zmq_manager 时可以在规划器生成的动作与网络流式动作之间切换。用 --output-type zmq 时，控制结果发布回端口 5557（话题 g1_debug）。" },
+  { q: "怎么运行 C++ 遥操作部署？", a: "在 gear_sonic_deploy/ 下：source scripts/setup_env.sh，然后 ./deploy.sh --input-type zmq_manager real 控制真机（sim 控制 MuJoCo 仿真）。低延迟 checkpoint 用对应的模型前缀与观测配置。" },
+];
+---
+<Base
+  title="SONIC 遥操作：VR、键盘、手柄、摄像头 + ZMQ 怎么选 | MotionBricks.wiki"
+  description="用 GR00T 技术栈遥操作 Unitree G1 的四种方式：VR 全身（PICO）、键盘、手柄、实时摄像头——外加 ZMQ 流式协议、CloudXR/DeviceIO 与 C++ 部署命令。"
+  path="/teleoperation/"
+  lang="zh"
+  crumbs={[{ label: "遥操作", href: "/zh/teleoperation/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">指南 · 来自官方教程</p>
+      <h1>遥操作 G1：<span style="color:var(--accent)">VR、键盘、手柄、摄像头</span></h1>
+      <p class="lede">SONIC 技术栈上的全身遥操作走 C++ 部署二进制的输入类型，外加流式 SMPL 姿态的 VR 管线。按你的任务选输入——本页把选项按<a href={OFFICIAL.docs.teleoperation} rel="noopener">官方遥操作指南</a>与教程画成地图。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>输入类型</h2>
+    <table>
+      <thead><tr><th>输入类型</th><th>是什么</th></tr></thead>
+      <tbody>
+        {inputTypes.map((i) => <tr><td><code>{i.t}</code></td><td>{i.d}</td></tr>)}
+      </tbody>
+    </table>
+    <p>通过 <code>--input-type &lt;type&gt;</code> 把这些传给部署二进制。完整参数参考（ZMQ 主机/端口/话题、输出类型、compliance、日志开关）在<a href={OFFICIAL.docs.deploymentCode} rel="noopener">C++ 部署程序流文档</a>里。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>VR 全身遥操作（PICO）</h2>
+    <p>旗舰方式：PICO 头显通过 <code>pico_manager_thread_server.py</code> 流式程序驱动全身动作，把 SMPL 身体参数经 ZMQ 发布（端口 5556，话题 <code>pose</code>）。C++ 部署用 <code>zmq_manager</code> 订阅。配置细节（PICO 标定、<code>.venv_teleop</code>）在<a href={OFFICIAL.docs.vrTeleopSetup} rel="noopener">VR 遥操作设置</a>与<a href={OFFICIAL.docs.dataCollection} rel="noopener">数据采集</a>文档里。官方安全提示：机器人周围保持 3 米净空安全区，并安排一名安全操作员随时按 <strong>O</strong> 紧急停机。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>C++ 部署命令</h2>
+    <pre class="code-block"><code>cd gear_sonic_deploy
+source scripts/setup_env.sh
+./deploy.sh --input-type zmq_manager real</code></pre>
+    <p><code>real</code> 面向实体机器人；<code>sim</code> 面向 MuJoCo（仿真必须加 <code>--disable-crc-check</code>）。低延迟 checkpoint 用低延迟模型前缀与配套观测配置（见<a href="/zh/sonic-models/">SONIC 模型选型</a>）。</p>
+    <p>部署二进制上的 ZMQ 配置：<code>--zmq-host</code>（默认 localhost）、<code>--zmq-port</code>（默认 5556）、<code>--zmq-topic</code>（默认 pose）、<code>--zmq-out-port</code>（默认 5557）、<code>--zmq-out-topic</code>（默认 g1_debug）。CloudXR / DeviceIO 的启动过程记录在仓库里的 Isaac Teleop Setup 教程中。</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="遥操作常见问题" />
+  </div>
+</Base>

@@ -1,0 +1,63 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, KNOWN_ISSUES } from "../../data/site.js";
+// GR00T-WBC 官方排错（来自 user_guide/troubleshooting.md）——关键问题
+const issues = [
+  { id: "isaaclab-missing", code: "ModuleNotFoundError: No module named 'isaaclab'", title: "Isaac Lab 未安装", desc: "训练或评估以导入错误退出。Isaac Lab 不是 pip 依赖——必须按官方 Isaac Lab 安装指南单独安装，然后激活正确的环境（conda activate env_isaaclab）。" },
+  { id: "lfs-meshes", code: "Mesh files are tiny text files", title: "Git LFS 未安装", desc: "网格文件（.stl/.STL）约 130 字节，内容以 version https://git-lfs.github.com/spec/v1 开头——仓库是在没有 LFS 的情况下克隆的。修复：sudo apt install git-lfs；git lfs install；git lfs pull。核对 main.urdf 约 60KB+，而不是约 130 字节。", fix: "sudo apt install git-lfs && git lfs install && git lfs pull" },
+  { id: "size-mismatch", code: "RuntimeError: size mismatch", title: "Checkpoint 与配置不匹配", desc: "例如 'size mismatch for actor_module.decoders.g1_dyn.module.0.weight'——实验配置定义的网络架构与 checkpoint 不同。发布的 sonic_release checkpoint 使用 hidden_dims: [2048, 2048, 1024, 1024, 512, 512]。把你的配置对齐到 checkpoint 的 config.yaml。" },
+  { id: "tensorrt-version", code: "TensorRT version mismatch", title: "静默错误的推理", desc: "TensorRT 版本与要求不符会产生静默错误的推理结果——模型正常运行不报错，但输出错误的动作。x86_64 桌面需要 TensorRT 10.13；Jetson / G1 板载 Orin 需要 10.7（JetPack 6）。用 echo $TensorRT_ROOT 和 ls $TensorRT_ROOT/lib/libnvinfer.so* 核对。", fix: "用精确版本：10.13（x86_64）/ 10.7（Jetson，JetPack 6）；从 NVIDIA Developer 下载 TAR" },
+  { id: "zmq-5557", code: "deploy.sh fails to bind ZMQ port 5557", title: "Unitree iphone_server 服务冲突", desc: "在 Orin 上，Unitree 的系统服务（iphone_server.service）已经占用了 5557 端口。", fix: "sudo systemctl stop iphone_server.service（跨重启禁用：sudo systemctl disable iphone_server.service）" },
+  { id: "cyclonedds", code: "ChannelFactory create domain error", title: "CycloneDDS 域冲突", desc: "run_sim_loop.py 以 cyclonedds.domain.Domain 初始化错误崩溃——SimulatorFactory 重新初始化了一个已创建的通道。已知问题 #77：注释掉重复的通道初始化，或确保没有其他 DDS 进程使用同一个域。" },
+  { id: "docker-mujoco", code: "MuJoCo viewer black in Docker", title: "Intel iGPU / NVIDIA dGPU 冲突", desc: "Intel 显示控制器机器上，Docker 内的 MuJoCo 窗口黑屏或花屏。修复：强制 NVIDIA 渲染（__NV_PRIME_RENDER_OFFLOAD=1、__GLX_VENDOR_LIBRARY_NAME=nvidia），或加 --gpus all -e DISPLAY=$DISPLAY 运行。见 issue #25。" },
+  { id: "smpl-drift", code: "SMPL tracking unstable / drifts", title: "坐标系约定不匹配", desc: "SMPL 数据可能有约定不匹配（y-up vs z-up）、关节顺序错误或重定向质量差。y-up 时核对 smpl_y_up: true；检查 SMPL PKL 的 smpl_joints 形状为 (T, 24, 3)；也可以先用 smpl_motion_file: dummy 隔离机器人编码器。" },
+  { id: "robot-explodes", code: "Robot explodes / falls on first frame", title: "初始状态或增益错误", desc: "通常是其中之一：init_state.pos 的 z 高度错误、KP/KD 太低或太高、动作尺度太大、默认关节角错误。用 num_envs=1 headless=False 调试，观察前几帧。" },
+  { id: "body-not-found", code: "RuntimeError: body 'xxx' not found", title: "配置引用了不存在的 body", desc: "配置 YAML 引用了你的机器人上没有的 body 名（把 G1 配置用在 H2 等不同机器人上时常见）。在 gear_sonic/config/ 里 grep -rn 报错的 body 名并覆盖它，或看 new embodiments 指南。" },
+];
+const faqItems = [
+  { q: "为什么我的 G1 网格文件只有约 130 字节？", a: "克隆前没装 Git LFS——这些网格是 LFS 指针。运行 sudo apt install git-lfs、git lfs install，然后 git lfs pull，并核对 main.urdf 约 60KB+，而不是约 130 字节。" },
+  { q: "为什么我的 SONIC checkpoint 在真机上行为错误、在仿真里却正常？", a: "TensorRT 版本不匹配是典型原因：TensorRT 版本与要求不符会产生静默错误的推理结果。x86_64 桌面精确用 TensorRT 10.13，Jetson / G1 板载 Orin（JetPack 6）用 10.7，然后重新编译 C++ 部署二进制。" },
+  { q: "加载 checkpoint 时报 size mismatch 错误是什么意思？", a: "实验配置定义的网络架构与 checkpoint 训练时用的不同——常见于覆盖 hidden_dims。把你的配置对齐到 checkpoint 保存的 config.yaml；发布的 sonic_release checkpoint 使用 hidden_dims [2048, 2048, 1024, 1024, 512, 512]。" },
+  { q: "仿真一开始机器人就立刻摔倒——为什么？", a: "通常是其中之一：初始状态高度错误（init_state.pos 的 z 值）、KP/KD 值不对（太低=没有保持力矩，太高=不稳定）、动作尺度太大、默认关节角错误。用 num_envs=1 headless=False 调试，观察前几帧。" },
+];
+---
+<Base
+  title="GR00T / SONIC 排错：错误总表 | MotionBricks.wiki"
+  description="GR00T-WholeBodyControl 技术栈的综合排错表：Isaac Lab 导入错误、Git LFS 网格指针、TensorRT 版本不匹配、ZMQ 端口冲突、SMPL 漂移等——来自官方文档。"
+  path="/troubleshooting/"
+  lang="zh"
+  crumbs={[{ label: "排错总表", href: "/zh/troubleshooting/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">总表 · 来自官方文档</p>
+      <h1>GR00T / SONIC 排错：<span style="color:var(--accent)">错误总表</span></h1>
+      <p class="lede">官方<a href={OFFICIAL.docs.troubleshooting} rel="noopener">排错指南</a>里的每一类错误，外加 MotionBricks 的 Known Issues——一页搞定，可搜索。如果你的问题不在这里，官方页面会指向 <a href={OFFICIAL.parentRepo} rel="noopener">GitHub issues</a>。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>GR00T-WBC 技术栈错误</h2>
+    <div class="post-list">
+      {issues.map((i) => (
+        <article class="post-item" id={i.id}>
+          <h3><code>{i.code}</code> — {i.title}</h3>
+          <p style="color:var(--ink-2)">{i.desc}</p>
+          {i.fix ? <div class="fixbox"><strong>修复：</strong> <code>{i.fix}</code></div> : null}
+        </article>
+      ))}
+    </div>
+    <p style="margin-top:18px">更多：官方完整清单还覆盖 trl/transformers 版本冲突、动作文件路径错误与 body 名配置——<a href={OFFICIAL.docs.troubleshooting} rel="noopener">直接阅读原文</a>。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>MotionBricks 已知问题（README）</h2>
+    <ul>
+      {KNOWN_ISSUES.map((k) => <li><strong>{k.t}:</strong> {k.d}</li>)}
+    </ul>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="排错常见问题" />
+  </div>
+</Base>

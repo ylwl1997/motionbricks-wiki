@@ -1,0 +1,58 @@
+---
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, RELATED, NEWS_TIMELINE } from "../../data/site.js";
+---
+<Base
+  title="GR00T Whole-Body Control 总览：完整技术栈地图 | MotionBricks.wiki"
+  description="NVIDIA GR00T Whole-Body Control（GR00T WBC）到底是什么：Decoupled WBC、GEAR-SONIC 与 MotionBricks 三支柱，N1.5/N1.6 血统，发布时间线，以及 MotionBricks 在仓库里的位置。"
+  path="/gr00t-overview/"
+  lang="zh"
+  crumbs={[{ label: "GR00T 总览", href: "/zh/gr00t-overview/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">全貌指南 · 来自 README</p>
+      <h1>GR00T Whole-Body Control：<span style="color:var(--accent)">整套技术栈，一张图</span></h1>
+      <p class="lede">MotionBricks 是一个更大工程里的一层。本页把整个 GR00T Whole-Body Control（WBC）代码库画成地图——三支柱、N 系列控制器、发布时间线——帮你找到自己真正需要的那一层。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>GR00T WBC 是什么</h2>
+    <p><a href={OFFICIAL.parentRepo} rel="noopener">GR00T Whole-Body Control</a> 是 NVIDIA 面向人形机器人全身控制器的代码库。它托管模型 checkpoint 以及训练、评估与部署高级全身控制器的脚本，目前支撑三块内容：</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Decoupled WBC</h3>
+        <p>解耦控制器——下半身用强化学习（RL），上半身用逆运动学（IK）——用于 NVIDIA GR00T <a href="https://research.nvidia.com/labs/gear/gr00t-n1_5/" rel="noopener">N1.5</a> 与 <a href="https://research.nvidia.com/labs/gear/gr00t-n1_6/" rel="noopener">N1.6</a> 模型。</p>
+      </div>
+      <div class="card">
+        <h3>GEAR-SONIC</h3>
+        <p>最新一代通才人形全身控制器。见<a href={RELATED.sonicPage} rel="noopener">白皮书</a>。</p>
+      </div>
+      <div class="card">
+        <h3>MotionBricks</h3>
+        <p>面向动画与机器人学实时交互控制的潜在生成模型——见<a href={OFFICIAL.projectPage} rel="noopener">项目页</a>。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>发布时间线</h2>
+    <table>
+      <thead><tr><th>日期</th><th>发布了什么</th></tr></thead>
+      <tbody>
+        {NEWS_TIMELINE.map(([d, t]) => <tr><td><code>{d}</code></td><td>{t}</td></tr>)}
+      </tbody>
+    </table>
+    <p style="color:var(--ink-2);font-size:13.5px">措辞以官方 README 的 News 一节为准。MotionBricks 完整发布（嵌入 GR00T WBC 机器人学表述的完整训练管线）在同一路线图里跟踪——目标大约在 2026-04-27 预览之后一个月。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>仓库地图</h2>
+    <p>各组件都住在单仓库 <code>NVlabs/GR00T-WholeBodyControl</code> 里。MotionBricks 以子项目形式发布（<code>motionbricks/</code>）；SONIC 控制器、训练与 C++ 部署在 <code>gear_sonic/</code> 下；文档在 <code>docs/source/</code>。<a href="/zh/sonic-models/">SONIC 模型选型</a>、<a href="/zh/vla-workflow/">VLA 全流程</a>与<a href="/zh/motion-representation/">动作表示</a>页各深入一个切片。</p>
+    <div class="grid">
+      <div class="card"><h3><a href="/zh/sonic-models/">SONIC 模型</a></h3><p>Default vs Low-latency vs v1.1——选哪个 checkpoint，以及 lookahead 注意事项。</p></div>
+      <div class="card"><h3><a href="/zh/vla-workflow/">VLA 全流程</a></h3><p>采集 → 微调 Isaac-GR00T N1.7 → 用 SONIC 部署。</p></div>
+      <div class="card"><h3><a href="/zh/teleoperation/">遥操作</a></h3><p>VR、键盘、手柄、实时摄像头——以及 ZMQ 流式传输。</p></div>
+    </div>
+  </section>
+</Base>

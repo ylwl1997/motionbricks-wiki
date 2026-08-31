@@ -1,0 +1,78 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL } from "../data/site.js";
+const faqItems = [
+  { q: "What is a VLA workflow in the SONIC stack?", a: "It is the full pipeline to make a robot act on language commands: 1) collect teleop demonstrations with VR whole-body teleoperation, 2) fine-tune the Isaac-GR00T N1.7 foundation model on that data, 3) deploy the finetuned policy for autonomous inference with the SONIC controller." },
+  { q: "What does the VLA inference stack look like?", a: "Four cooperating pieces: the Isaac-GR00T PolicyServer (serves actions over ZMQ, runs on a GPU machine), the VLA inference client (reads camera + robot state, queries the server, publishes actions), the C++ deploy binary (executes whole-body control), and the camera server (publishes images over ZMQ, runs on the robot as a systemd service)." },
+  { q: "Which SONIC checkpoint should I use for VLA?", a: "Use the sonic_v1_1 checkpoint when your VLA policy was trained against the robot-heading-normalized SONIC controller (it uses a 10-frame SMPL/wrist reference horizon and wrist-pose augmentation, and is not the low-latency checkpoint). For the most responsive teleoperation, the low-latency checkpoint pairs with matching observation config." },
+];
+---
+<Base
+  title="VLA workflow: collect, fine-tune Isaac-GR00T N1.7, deploy with SONIC | MotionBricks.wiki"
+  description="The end-to-end vision-language-action workflow on the GR00T stack: VR teleop data collection, fine-tuning Isaac-GR00T N1.7, and deploying the policy with SONIC whole-body control — commands verbatim from the official tutorials."
+  path="/vla-workflow/"
+  crumbs={[{ label: "VLA workflow", href: "/vla-workflow/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Pipeline guide · commands verbatim</p>
+      <h1>The VLA workflow: <span style="color:var(--accent)">collect, fine-tune, deploy</span></h1>
+      <p class="lede">Vision-language-action (VLA) policies let a robot follow language prompts. The official pipeline has three steps — teleop data collection, Isaac-GR00T N1.7 fine-tuning, SONIC deployment. All commands below are copied from the <a href={OFFICIAL.docs.vlaWorkflow} rel="noopener">VLA Workflow</a> and <a href={OFFICIAL.docs.vlaInference} rel="noopener">VLA Inference</a> tutorials.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Step 1 · Collect teleop demonstrations</h2>
+    <p>Record demonstrations with VR whole-body teleoperation. The data exporter captures robot state, camera images, and teleop actions as a <a href="https://github.com/huggingface/lerobot" rel="noopener">LeRobot</a> dataset. Full setup (camera server, VR teleop, recording controls) is in the <a href={OFFICIAL.docs.dataCollection} rel="noopener">Data Collection tutorial</a>.</p>
+    <pre class="code-block"><code>python gear_sonic/scripts/launch_data_collection.py \
+  --camera-host 192.168.123.164 \
+  --task-prompt "pick up the cup"</code></pre>
+  </section>
+
+  <section class="block wrap">
+    <h2>Step 2 · Fine-tune with Isaac-GR00T</h2>
+    <p>Fine-tune the GR00T N1.7 base model on your dataset using the <a href="https://github.com/NVIDIA/Isaac-GR00T" rel="noopener">Isaac-GR00T</a> training pipeline. Prerequisites: clone and install Isaac-GR00T (<code>uv sync --all-extras</code>), a multi-GPU machine (4+ GPUs recommended), and the dataset accessible from the training machine.</p>
+    <pre class="code-block"><code>git clone https://github.com/NVIDIA/Isaac-GR00T.git
+cd Isaac-GR00T
+uv sync --all-extras</code></pre>
+    <p>Launch fine-tuning:</p>
+    <pre class="code-block"><code>export NUM_GPUS=4
+uv run python \
+    gr00t/experiment/launch_finetune.py \
+    --base-model-path nvidia/GR00T-N1.7-3B \
+    --dataset-path /path/to/your/collected_dataset \
+    --embodiment-tag UNITREE_G1_SONIC \
+    --modality-config-path gr00t/configs/data/embodiment_configs.py \
+    --num-gpus $NUM_GPUS \
+    --output-dir /path/to/output \
+    --save-total-limit 5 \
+    --save-steps 5000 \
+    --max-steps 20000 \
+    --use-wandb \
+    --global-batch-size 32 \
+    --color-jitter-params brightness 0.3 contrast 0.4 saturation 0.5 hue 0.08 \
+    --dataloader-num-workers 4</code></pre>
+    <p>Key parameters: <code>--max-steps</code> (20k is a good starting point), <code>--global-batch-size</code> (total across all GPUs), <code>--save-steps</code> (checkpoint interval), <code>--use-wandb</code> (training metrics to Weights &amp; Biases). Checkpoints land in <code>--output-dir</code> (checkpoint-5000 … checkpoint-20000 + config.json + processor_config.json).</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Step 3 · Deploy for inference</h2>
+    <p>Start the PolicyServer on the GPU machine (from the Isaac-GR00T repo):</p>
+    <pre class="code-block"><code>uv run python gr00t/eval/run_gr00t_server.py \
+    --model-path /path/to/output/checkpoint-20000 \
+    --embodiment-tag UNITREE_G1_SONIC \
+    --device cuda:0 \
+    --port 5550</code></pre>
+    <p>Then run inference from the GR00T-WholeBodyControl repo:</p>
+    <pre class="code-block"><code>python gear_sonic/scripts/launch_inference.py \
+    --policy-host &lt;gpu_machine_ip&gt; \
+    --policy-port 5550 \
+    --camera-host 192.168.123.164 \
+    --prompt "pick up the soda can and place it in the bin"</code></pre>
+    <p>The inference environment is installed with <code>bash install_scripts/install_inference.sh</code> (creates <code>.venv_inference</code>), the camera server runs as a systemd service on the robot, and <code>gear_sonic_deploy</code> must be built. For the low-latency checkpoint, download deployment files with <code>python download_from_hf.py --low-latency</code> and launch <code>gear_sonic_deploy</code> with the low-latency model prefix and matching observation config. For SONIC v1.1 (robot-heading-normalized), use <code>python download_from_hf.py --sonic-v1-1</code>.</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="VLA workflow FAQ" />
+  </div>
+</Base>

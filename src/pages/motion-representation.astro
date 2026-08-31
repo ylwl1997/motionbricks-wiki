@@ -1,0 +1,81 @@
+---
+import Base from "../layouts/Base.astro";
+import { OFFICIAL } from "../data/site.js";
+const bodyFeatures = [
+  { f: "ric_data", d: "99", desc: "Global joint positions with the projected (XZ) root position subtracted per frame, for 33 non-root joints. Not heading-canonicalized." },
+  { f: "global_rot_data", d: "204", desc: "Global (world-frame) 6D continuous rotations for all 34 joints." },
+  { f: "local_vel", d: "102", desc: "Global-frame per-joint velocity, computed as finite differences of world positions." },
+  { f: "foot_contacts", d: "4", desc: "Binary contact states for left ankle, left toe, right ankle, right toe." },
+];
+const rootFeatures = [
+  { f: "global_root_pos", d: "3", desc: "XYZ position in world frame (during training and inference, first frame's root XZ is placed at origin)." },
+  { f: "global_root_heading", d: "2", desc: "Heading representation (global frame)." },
+];
+const localRootFeatures = [
+  { f: "local_root_pos", d: "2", desc: "XZ position in the heading-rotated local frame." },
+  { f: "local_root_heading", d: "2", desc: "Heading offset relative to the root's current heading." },
+];
+---
+<Base
+  title="MotionBricks motion representation: the 418-dim feature breakdown | MotionBricks.wiki"
+  description="Deep dive into MotionBricks' motion representation: the 418-dim per-frame feature vector (409 body + 5/4 root), Global vs Local subsets, DualRootGlobalJoints, G1Skeleton34 — from motion_representation.md."
+  path="/motion-representation/"
+  crumbs={[{ label: "Motion representation", href: "/motion-representation/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Reference · from motion_representation.md</p>
+      <h1>The 418-dim motion representation, <span style="color:var(--accent)">broken down</span></h1>
+      <p class="lede">MotionBricks represents each frame of motion as a normalized feature vector. The breakdown below is transcribed from the official <a href={OFFICIAL.motionReprDocs} rel="noopener">motion_representation.md</a> — every dimension number is verbatim.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>The big picture</h2>
+    <p>The representation separates <strong>root motion</strong> (global position and heading of the robot's pelvis) from <strong>body motion</strong> (joint rotations, positions, velocities, and foot contacts). This lets the root model and the pose/tokenizer module operate on different subsets of the same representation.</p>
+    <ul>
+      <li><strong>Global</strong> (<code>GlobalRootGlobalJoints</code>, <strong>414 dims</strong>) — the root model mostly operates with this, for precise global root control. This is also what the data loader returns directly.</li>
+      <li><strong>Local</strong> (<code>LocalRootGlobalJoints</code>, <strong>413 dims</strong>) — used by the pose/tokenizer module.</li>
+    </ul>
+    <p>The two subsets share the same 409-dim body features and differ only in root parameterization (5 global vs 4 local dims). They convert losslessly via <code>dual_rep.global_to_local</code> / <code>dual_rep.local_to_global</code>. In training, batches come out of the loader in the global representation and are converted to local on the fly before the pose/tokenizer module; the <code>"motion"</code> tensor in every batch dict is always global.</p>
+    <p>The current configuration uses the <strong>DualRootGlobalJoints</strong> representation on the <strong>G1Skeleton34</strong> skeleton (Unitree G1 with 34 joints). The full feature vector is <strong>418-dimensional</strong> per frame, composed of the 414-dim global subset and the 413-dim local subset that share the 409-dim body features.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Body features (409 dims)</h2>
+    <p>Shared by both global and local root representations, defined in the global (world) frame. The <code>local_</code> prefix on <code>local_vel</code> is a naming holdover — in <code>DualRootGlobalJoints</code> (<code>removing_heading=False</code>) the velocity is NOT heading-rotated.</p>
+    <table>
+      <thead><tr><th>Feature</th><th>Dims</th><th>Description</th></tr></thead>
+      <tbody>
+        {bodyFeatures.map((r) => <tr><td><code>{r.f}</code></td><td>{r.d}</td><td>{r.desc}</td></tr>)}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block wrap">
+    <h2>Global root features (5 dims)</h2>
+    <p>Used by the global representation subset (consumed by the root model).</p>
+    <table>
+      <thead><tr><th>Feature</th><th>Dims</th><th>Description</th></tr></thead>
+      <tbody>
+        {rootFeatures.map((r) => <tr><td><code>{r.f}</code></td><td>{r.d}</td><td>{r.desc}</td></tr>)}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block wrap">
+    <h2>Local root features (4 dims)</h2>
+    <p>Used by the local representation subset (consumed by the pose/tokenizer module).</p>
+    <table>
+      <thead><tr><th>Feature</th><th>Dims</th><th>Description</th></tr></thead>
+      <tbody>
+        {localRootFeatures.map((r) => <tr><td><code>{r.f}</code></td><td>{r.d}</td><td>{r.desc}</td></tr>)}
+      </tbody>
+    </table>
+    <p>Sanity check: 409 body + 5 global root = 414 (GlobalRootGlobalJoints); 409 + 4 local root = 413 (LocalRootGlobalJoints); together they define the 418-dim DualRootGlobalJoints vector.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Sources</h2>
+    <p>Full derivation and details: <a href={OFFICIAL.motionReprDocs} rel="noopener">motion_representation.md</a> and the MotionBricks paper (<a href={OFFICIAL.arxiv} rel="noopener">arXiv 2604.24833</a>).</p>
+  </section>
+</Base>

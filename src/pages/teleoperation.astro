@@ -1,0 +1,58 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL } from "../data/site.js";
+const faqItems = [
+  { q: "What teleoperation methods does the SONIC stack support?", a: "The C++ deploy binary accepts several input types: keyboard, gamepad (wireless controller), gamepad_manager (with quick switching to ZMQ/ROS2), zmq (network motion streaming), zmq_manager (dynamic switching between planner and streamed motion), manager (dynamic switching between keyboard, gamepad, ZMQ, and ROS2), and ros2 (ROS2 topic control, requires planner). VR whole-body teleoperation uses the PICO headset with the pico_manager streamer feeding SMPL poses over ZMQ." },
+  { q: "What is ZMQ's role in teleoperation?", a: "ZMQ carries the live motion stream. With --input-type zmq the deploy binary subscribes to a pose topic (default port 5556, topic 'pose'), and with zmq_manager it can switch between planner-generated motion and network-streamed motion. Control results publish back on port 5557 (topic g1_debug) with --output-type zmq." },
+  { q: "How do I run C++ deployment for teleop?", a: "From gear_sonic_deploy/: source scripts/setup_env.sh, then ./deploy.sh --input-type zmq_manager real for real robot (or sim for MuJoCo). For the low-latency checkpoint use the matching model prefix and observation config." },
+];
+---
+<Base
+  title="SONIC teleoperation: VR, keyboard, gamepad, camera + ZMQ — how to choose | MotionBricks.wiki"
+  description="The four ways to teleoperate the Unitree G1 with the GR00T stack: VR whole-body (PICO), keyboard, gamepad, and live camera — plus the ZMQ streaming protocol, CloudXR/DeviceIO, and the C++ deploy commands."
+  path="/teleoperation/"
+  crumbs={[{ label: "Teleoperation", href: "/teleoperation/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Guide · from the official tutorials</p>
+      <h1>Teleoperating the G1: <span style="color:var(--accent)">VR, keyboard, gamepad, camera</span></h1>
+      <p class="lede">Whole-body teleoperation on the SONIC stack runs through the C++ deploy binary's input types, plus the VR pipeline that streams SMPL poses. Pick the input that fits your task — this page maps the options from the <a href={OFFICIAL.docs.teleoperation} rel="noopener">official teleoperation guide</a> and tutorials.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>The input types</h2>
+    <table>
+      <thead><tr><th>Input type</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td><code>keyboard</code></td><td>Direct keyboard input (default)</td></tr>
+        <tr><td><code>gamepad</code></td><td>Wireless controller</td></tr>
+        <tr><td><code>gamepad_manager</code></td><td>Gamepad + quick switching to ZMQ/ROS2</td></tr>
+        <tr><td><code>zmq</code></td><td>Network motion streaming</td></tr>
+        <tr><td><code>zmq_manager</code></td><td>Dynamic switching between planner and network motion streaming</td></tr>
+        <tr><td><code>manager</code></td><td>Dynamic switching between keyboard, gamepad, ZMQ, and ROS2</td></tr>
+        <tr><td><code>ros2</code></td><td>ROS2 topic control (requires planner, only if built with ROS2 support)</td></tr>
+      </tbody>
+    </table>
+    <p>Pass any of these with <code>--input-type &lt;type&gt;</code> to the deploy binary. The full argument reference (ZMQ host/port/topic, output type, compliance, logging flags) is in the <a href={OFFICIAL.docs.deploymentCode} rel="noopener">C++ deployment program-flow doc</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>VR whole-body teleoperation (PICO)</h2>
+    <p>The flagship method: a PICO headset drives full-body motion via the <code>pico_manager_thread_server.py</code> streamer, which publishes SMPL body parameters over ZMQ (port 5556, topic <code>pose</code>). The C++ deploy subscribes with <code>zmq_manager</code>. Setup details (PICO calibration, <code>.venv_teleop</code>) are in the <a href={OFFICIAL.docs.vrTeleopSetup} rel="noopener">VR teleop setup</a> and <a href={OFFICIAL.docs.dataCollection} rel="noopener">data collection</a> docs. The official safety note: keep a clear 3-meter safety zone around the robot and a safety operator ready to press <strong>O</strong> for emergency stop.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>C++ deploy commands</h2>
+    <pre class="code-block"><code>cd gear_sonic_deploy
+source scripts/setup_env.sh
+./deploy.sh --input-type zmq_manager real</code></pre>
+    <p><code>real</code> targets the physical robot; <code>sim</code> targets MuJoCo (<code>--disable-crc-check</code> is required for simulation). The low-latency checkpoint uses the low-latency model prefix and matching observation config (see <a href="/sonic-models/">SONIC model selector</a>).</p>
+    <p>ZMQ configuration on the deploy binary: <code>--zmq-host</code> (default localhost), <code>--zmq-port</code> (default 5556), <code>--zmq-topic</code> (default pose), <code>--zmq-out-port</code> (default 5557), <code>--zmq-out-topic</code> (default g1_debug). CloudXR / DeviceIO bring-up is documented in the Isaac Teleop Setup tutorial in the repo.</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Teleoperation FAQ" />
+  </div>
+</Base>

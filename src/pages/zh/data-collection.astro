@@ -1,0 +1,206 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, RELATED } from "../../data/site.js";
+const faqItems = [
+  { q: "为 VLA 微调采集数据需要真机吗？", a: "不需要——all-in-one 启动器支持仿真：python gear_sonic/scripts/launch_data_collection.py --sim 会在单独的 tmux 窗口里自动启动 run_sim_loop.py，MuJoCo 仿真循环在相机端口发布摄像头图像（无需相机服务器）。真机路径额外要求机器人上运行相机服务器。" },
+  { q: "相机服务器跑在哪里，其他组件跑在哪里？", a: "相机服务器是唯一运行在机器人计算机（如 Jetson Orin）上的组件，那里接着物理 OAK 相机，通过 ZMQ 发布 JPEG 帧。其他所有组件——C++ 部署、PICO 遥操作流式程序、数据导出器与相机查看器——都运行在工作站的 offboard 侧。" },
+  { q: "为什么处理时我的整个数据集被丢弃了？", a: "如果你用 VR 3 点跟踪模式（VR_3PT）采集，teleop.smpl_pose 列全是零，因为 VR_3PT 用原始 VR 位置/朝向而不是 SMPL 身体参数。默认的 SMPL 清理会因此移除所有帧——这种情况必须给 process_dataset.py 传 --no-remove-stale-smpl。" },
+  { q: "数据采集支持哪些相机？", a: "经过测试与支持的是 Luxonis OAK 相机（OAK-D、OAK-1 等）：一个头部/第一视角 OAK 相机，加可选的 OAK 腕部相机。头部/第一视角 OAK-D W 相机的 3D 打印支架在 hardware/camera_mount/，带打印设置与物料清单。代码库里存在 RealSense 与 USB 摄像头驱动，但最近没测过。" },
+];
+const channelTable = [
+  ["observation.state.joint_position", "(N,)", "被驱动的关节位置（弧度）"],
+  ["observation.state.joint_velocity", "(N,)", "被驱动的关节速度（弧度/秒）"],
+  ["observation.state.body_rotation_6d", "(6,)", "基座朝向（6D 旋转）"],
+  ["observation.state.projected_gravity", "(3,)", "body 系下的重力向量"],
+  ["observation.images.ego_view", "(480, 640, 3)", "第一视角相机图像（存为 MP4 视频）"],
+  ["observation.images.left_wrist", "(480, 640, 3)", "左腕相机（仅 --record-wrist-cameras 时）"],
+  ["observation.images.right_wrist", "(480, 640, 3)", "右腕相机（仅 --record-wrist-cameras 时）"],
+  ["action.joint_position", "(N,)", "遥操作目标关节位置"],
+  ["action.body_rotation_6d", "(6,)", "遥操作目标 body 朝向"],
+  ["annotation.human.action.task_description", "string", "本帧的任务提示"],
+];
+const sourceTable = [
+  ["C++ 部署", "工作站", "g1_debug", "5557", "关节位置、速度、IMU 四元数"],
+  ["C++ 部署", "工作站", "robot_config", "5557", "启动时的一次性机器人配置"],
+  ["PICO 遥操作流式程序", "工作站", "pose", "5556", "SMPL 身体参数（遥操作目标姿态）"],
+  ["相机服务器", "机器人", "（原始 TCP）", "5555", "JPEG 压缩的相机图像（第一视角 + 可选腕部视角）"],
+];
+---
+<Base
+  title="SONIC 数据采集：LeRobot 数据集、OAK 相机、ZMQ | MotionBricks.wiki"
+  description="为 Isaac-GR00T 微调录制 LeRobot 遥操作数据集：offboard/onboard 架构、OAK-D 相机、相机服务器 systemd、ZMQ 格式、tmux 启动器与 process_dataset.py 清理——命令逐字来自官方教程。"
+  path="/data-collection/"
+  lang="zh"
+  crumbs={[{ label: "数据采集", href: "/zh/data-collection/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">教程 · 命令逐字照录</p>
+      <h1>SONIC 数据采集：<span style="color:var(--accent)">给 VLA 的 LeRobot 数据集</span></h1>
+      <p class="lede">把遥操作演示录成 <a href="https://github.com/huggingface/lerobot" rel="noopener">LeRobot</a> 数据集，供 <a href="https://github.com/NVIDIA/Isaac-GR00T" rel="noopener">Isaac-GR00T</a> 后训练使用。数据导出器与 SONIC 部署和 VR 遥操作栈并行运行，按可配置频率捕获机器人状态、SMPL 遥操作姿态与相机图像。所有命令逐字摘自官方 <a href={OFFICIAL.docs.dataCollection} rel="noopener">Data Collection 教程</a>。</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="本页目录">
+      <p class="tt">本页目录</p>
+      <a href="#model">部署模型</a>
+      <a href="#cameras">支持的相机</a>
+      <a href="#setup">工作站设置</a>
+      <a href="#camera-server">相机服务器</a>
+      <a href="#zmq">ZMQ 格式</a>
+      <a href="#architecture">架构与数据源</a>
+      <a href="#launcher">Tmux 启动器</a>
+      <a href="#manual">手动设置</a>
+      <a href="#channels">数据通道</a>
+      <a href="#process">后处理</a>
+      <a href="#bones">BONES-SEED</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+
+    <div>
+      <section id="model" class="block">
+        <h2>部署模型</h2>
+        <div class="note">除了<strong>相机服务器</strong>跑在<strong>机器人计算机上</strong>（如 Jetson Orin，物理相机就接在那里），<strong>其他一切都在工作站的 offboard 侧</strong>运行。相机服务器通过 ZMQ 向工作站发布 JPEG 帧。</div>
+        <p>前置要求：完成 <a href={OFFICIAL.docs.quickstart} rel="noopener">Quick Start</a>（sim2sim 循环，包括<a href="/zh/installation-deploy/">部署安装</a>与模型 checkpoint 下载）、完成 <a href={OFFICIAL.docs.vrTeleopSetup} rel="noopener">VR Teleop Setup</a>（PICO 硬件已标定、<code>.venv_teleop</code> 就绪），并让相机服务器在机器人上运行。仿真时，MuJoCo 仿真循环自动发布摄像头图像——无需相机服务器。</p>
+      </section>
+
+      <section id="cameras" class="block">
+        <h2>支持的相机</h2>
+        <p>经过测试与支持的相机配置使用 <strong>Luxonis OAK 相机</strong>（OAK-D、OAK-1 等）：一个头部/第一视角 OAK 相机，加可选的 OAK 腕部相机。其他相机驱动（RealSense、USB 摄像头）在代码库里，但最近没测过。头部/第一视角 <strong>OAK-D W</strong> 相机的 3D 打印支架在 <code>hardware/camera_mount/</code> 下——README 覆盖打印设置、物料清单以及如何装到 G1 上。</p>
+      </section>
+
+      <section id="setup" class="block">
+        <h2>一次性设置（工作站）</h2>
+        <p>从仓库根目录运行安装脚本，创建带全部数据采集依赖（LeRobot、PyAV、OpenCV 等）的专用虚拟环境：</p>
+        <pre class="code-block"><code>bash install_scripts/install_data_collection.sh</code></pre>
+        <p>这会用 <code>uv</code> 基于 Python 3.10 创建 <code>.venv_data_collection</code>，安装 <code>gear_sonic[data_collection]</code>（lerobot、av、opencv-python 等包）加上 <code>espeak</code>（系统包）用于录制时的语音反馈。这个环境与 <code>.venv_teleop</code>、<code>.venv_sim</code> 相互独立——数据导出器有遥操作和仿真用不到的更重的 ML 依赖。</p>
+      </section>
+
+      <section id="camera-server" class="block">
+        <h2>相机服务器设置（机器人侧）</h2>
+        <p>相机服务器是<strong>唯一运行在机器人计算机上</strong>（如 Jetson Orin）的组件。其他所有组件——C++ 部署、PICO 遥操作流式程序、数据导出器与相机查看器——都运行在你的工作站上。它从物理连接在机器人上的 OAK 相机捕获帧，并通过 ZMQ 发布。</p>
+        <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl</code></pre>
+        <pre class="code-block"><code>bash install_scripts/install_camera_server.sh</code></pre>
+        <p>脚本创建带 <code>gear_sonic[camera]</code>（DepthAI、ZMQ、msgpack、OpenCV、tyro）的 <code>.venv_camera</code>，检测连接的 OAK 相机并列出它们的 MxID，逐个提示每个相机的位置（第一视角，可选左/右腕）与设备 ID，然后询问是否把相机服务器装成 <strong>systemd 服务</strong>（推荐）——回答 y 会自动生成 unit 文件、安装、启用并启动。验证：</p>
+        <pre class="code-block"><code>sudo systemctl status composed_camera_server.service
+journalctl -u composed_camera_server.service -f</code></pre>
+        <p><strong>手动替代：</strong>在 <code>.venv_camera</code> 里用 <code>python -c "import depthai as dai; print(dai.Device.getAllAvailableDevices())"</code> 找设备 ID，然后用 <code>python -m gear_sonic.camera.composed_camera --ego-view-camera oak --ego-view-device-id &lt;YOUR_MXID&gt; --port 5555</code> 启动服务器（腕部相机加 <code>--left-wrist-camera</code> / <code>--right-wrist-camera</code> 标志；<code>--fps</code>、<code>--use-mjpeg</code>、<code>--mjpeg-quality</code> 见 <code>--help</code>）。手动 systemd：编辑 <code>systemd/composed_camera_server.service</code>，复制到 <code>/etc/systemd/system/</code>，然后 <code>daemon-reload</code> + <code>enable</code> + <code>start</code>。G1 机器人的默认 IP 是 <code>192.168.123.164</code>。</p>
+      </section>
+
+      <section id="zmq" class="block">
+        <h2>ZMQ 消息格式</h2>
+        <p>相机服务器每个帧周期发布一个包含所有相机图像的 msgpack 编码负载：</p>
+        <pre class="code-block"><code>{'{'}
+    "timestamps": {'{'} "ego_view": 1712345678.123, "left_wrist": 1712345678.125 {'}'},
+    "images": {'{'} "ego_view": "&lt;base64-jpeg&gt;", "left_wrist": "&lt;base64-jpeg&gt;" {'}'}
+{'}'}</code></pre>
+        <p>图像经 JPEG 压缩（<strong>质量 80</strong>），以 base64 编码字符串或原始 JPEG 字节（启用 MJPEG 设备端编码时）传输。数据导出器的 <code>ComposedCameraClientSensor</code> 自动处理两种格式。</p>
+      </section>
+
+      <section id="architecture" class="block">
+        <h2>架构与 ZMQ 数据源</h2>
+        <table>
+          <thead><tr><th>数据源</th><th>运行在</th><th>ZMQ 话题</th><th>默认端口</th><th>提供</th></tr></thead>
+          <tbody>{sourceTable.map((r) => <tr><td>{r[0]}</td><td>{r[1]}</td><td><code>{r[2]}</code></td><td>{r[3]}</td><td>{r[4]}</td></tr>)}</tbody>
+        </table>
+        <p>数据导出器订阅全部三个 ZMQ 数据源——5557 端口的部署状态、5556 的 SMPL 遥操作姿态、5555 的相机图像——并写出 LeRobot 数据集（parquet + mp4）。</p>
+      </section>
+
+      <section id="launcher" class="block">
+        <h2>方案 A · 一体化 tmux 启动器（推荐）</h2>
+        <p>启动器在单个 tmux 会话里启动全部组件，共四个窗格：C++ Deploy、PICO Teleop、Data Exporter、Camera Viewer（需要 <code>tmux</code>：<code>sudo apt install tmux</code>）。仿真（启动器会在单独的 tmux 窗口自动启动 <code>run_sim_loop.py</code>）：</p>
+        <pre class="code-block"><code>python gear_sonic/scripts/launch_data_collection.py --sim</code></pre>
+        <p>真机（相机服务器运行在 <code>192.168.123.164</code> 的机器人上）：</p>
+        <pre class="code-block"><code>python gear_sonic/scripts/launch_data_collection.py \
+    --camera-host 192.168.123.164 \
+    --task-prompt "pick up the cup"</code></pre>
+        <p>带腕部相机（录制第一视角 + 左/右腕流）：</p>
+        <pre class="code-block"><code>python gear_sonic/scripts/launch_data_collection.py \
+    --camera-host 192.168.123.164 \
+    --task-prompt "pick up the cup" \
+    --record-wrist-cameras</code></pre>
+        <p>无需先激活虚拟环境——如果当前 Python 缺必要依赖，启动器会自动检测并使用 <code>.venv_data_collection</code>。常用标志：<code>--task-prompt</code>（默认 "demo"）、<code>--dataset-name</code>（默认：时间戳）、<code>--sim / --no-sim</code>、<code>--camera-host</code>（默认 localhost）、<code>--camera-port</code>（5555）、<code>--data-exporter-frequency</code>（50）、<code>--deploy-checkpoint</code>、<code>--deploy-obs-config</code>、<code>--deploy-planner</code>、<code>--deploy-motion-data</code>、<code>--record-wrist-cameras</code>、<code>--no-text-to-speech</code>。会话管理：<code>Ctrl+b</code> 加方向键切换窗格，<code>Ctrl+b</code> 加 <code>d</code> 分离，<code>tmux attach -t sonic_data_collection</code> 重新接入，<code>tmux kill-session -t sonic_data_collection</code> 结束。</p>
+        <p><strong>录制控制：</strong>PICO VR 手柄——<strong>Left Grip + A</strong> 切换录制（开始新 episode 或停止并保存），<strong>Left Grip + B</strong> 丢弃当前 episode（会存到磁盘，但在后处理时标记为移除）。键盘经 ZMQ（端口 5580）：<code>c</code> 切换录制，<code>x</code> 丢弃该 episode。这些在任何 manager 模式（POSE、PLANNER 等）下都有效。</p>
+      </section>
+
+      <section id="manual" class="block">
+        <h2>方案 B · 手动多终端设置</h2>
+        <p><strong>终端 1 —— MuJoCo 仿真器</strong>（真机跳过）：</p>
+        <pre class="code-block"><code>source .venv_sim/bin/activate
+python gear_sonic/scripts/run_sim_loop.py \
+    --enable-image-publish --enable-offscreen --camera-port 5555</code></pre>
+        <p><strong>终端 2 —— C++ 部署</strong>（在 <code>gear_sonic_deploy/</code> 里）：</p>
+        <pre class="code-block"><code>cd gear_sonic_deploy
+source scripts/setup_env.sh
+./deploy.sh --input-type zmq_manager sim
+# Wait until you see "Init done"</code></pre>
+        <p><strong>终端 3 —— PICO 遥操作流式程序：</strong></p>
+        <pre class="code-block"><code>source .venv_teleop/bin/activate
+python gear_sonic/scripts/pico_manager_thread_server.py --manager</code></pre>
+        <p><strong>终端 4 —— 数据导出器：</strong></p>
+        <pre class="code-block"><code>source .venv_data_collection/bin/activate
+python gear_sonic/scripts/run_data_exporter.py --task-prompt "pick up the cup"</code></pre>
+        <p><strong>终端 5（可选）—— 相机查看器：</strong>在 <code>.venv_data_collection</code> 里运行 <code>python gear_sonic/scripts/run_camera_viewer.py</code>。数据集保存在 <code>&lt;root-output-dir&gt;/&lt;dataset-name&gt;/</code>（默认根目录 <code>outputs</code>）；省略 <code>--dataset-name</code> 用自动时间戳，或复用名字来追加 episode。独立相机查看器还录制原始 MP4 参考视频（<code>R</code> 开始/停止，<code>Q</code> 退出）到 <code>camera_recordings/rec_&lt;timestamp&gt;/</code>。</p>
+      </section>
+
+      <section id="channels" class="block">
+        <h2>录制的数据通道</h2>
+        <table>
+          <thead><tr><th>特征</th><th>形状</th><th>描述</th></tr></thead>
+          <tbody>{channelTable.map((r) => <tr><td><code>{r[0]}</code></td><td><code>{r[1]}</code></td><td>{r[2]}</td></tr>)}</tbody>
+        </table>
+        <p>数据集按 <a href="https://github.com/huggingface/lerobot" rel="noopener">LeRobot v2.1</a> 格式保存在 <code>&lt;root-output-dir&gt;/&lt;dataset-name&gt;/</code>：<code>data/</code>（parquet：关节状态、动作、标注）、<code>videos/</code>（每路相机流 H264 编码的 MP4）、<code>meta/</code>（info.json、modality.json、episodes.jsonl、tasks.jsonl）。</p>
+      </section>
+
+      <section id="process" class="block">
+        <h2>数据集后处理</h2>
+        <p>所有命令在 <code>.venv_data_collection</code> 里运行。<strong>移除被丢弃的 episode</strong>（用 <code>x</code> 或 Left Grip + B 标记）——默认行为会移除它们，确保不进入微调；传 <code>--no-remove-discarded</code> 保留供检查：</p>
+        <pre class="code-block"><code># Clean a single dataset (removes discarded episodes + stale SMPL frames)
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/my_dataset \
+    --output-path outputs/my_dataset_cleaned</code></pre>
+        <p><strong>移除过期 SMPL 帧</strong>——遥操作暂停或 ZMQ 丢帧会产生 <code>teleop.smpl_pose</code> 全为零的帧；脚本还会移除它们前面连续冻结（相同）的引入帧。可原地或非破坏处理：</p>
+        <pre class="code-block"><code># Clean a single dataset in-place
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/my_dataset
+
+# Clean and write to a new directory (non-destructive)
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/my_dataset \
+    --output-path outputs/my_dataset_cleaned</code></pre>
+        <div class="warn"><strong>VR_3PT 陷阱：</strong>如果你用 VR 3 点跟踪模式（VR_3PT）采集，<code>teleop.smpl_pose</code> 全是零，因为 VR_3PT 用原始 VR 位置/朝向而不是 SMPL 身体参数。你<strong>必须</strong>禁用 SMPL 清理，否则会丢光所有帧：
+        <pre class="code-block"><code>python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/my_dataset \
+    --output-path outputs/my_dataset_cleaned \
+    --no-remove-stale-smpl</code></pre>
+        </div>
+        <p><strong>合并多个数据集</strong>（会验证所有会话共享相同的 <code>script_config</code> 机器人配置）：</p>
+        <pre class="code-block"><code># Merge by listing datasets on the command line
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/session1 outputs/session2 outputs/session3 \
+    --output-path outputs/merged_dataset
+
+# Or use a text file (one dataset path per line, # for comments)
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-list datasets.txt \
+    --output-path outputs/merged_dataset</code></pre>
+        <p>SMPL 清理在合并时默认生效——它会移除 SMPL 遥操作姿态卡在零的整帧（操作员暂停、ZMQ 丢包时段），外加进入零段前的连续冻结帧。加 <code>--no-remove-stale-smpl</code> 跳过清理只合并。输出数据集直接兼容 <a href="https://github.com/NVIDIA/Isaac-GR00T" rel="noopener">Isaac-GR00T</a> 后训练管线——下一步是<a href="/zh/vla-workflow/">VLA 全流程</a>。</p>
+      </section>
+
+      <section id="bones" class="block">
+        <h2>BONES-SEED：离线动作语料</h2>
+        <p>除了你自己的遥操作演示，训练数据栈还构建在 <a href={RELATED.bonesSeed} rel="noopener">BONES-SEED</a> 之上——一个开放数据集，包含 <strong>142,220 段带标注的人体动作动画</strong>（71,132 原始 + 71,088 镜像，120 fps 下约 288 小时），来自 522 位演员，带自然语言描述与时间分段，提供 SOMA 与 Unitree G1 两种格式。每段动作有三种格式：SOMA Proportional（BVH）、SOMA Uniform（BVH）与重定向到 G1 人形机器人的 Unitree G1（CSV）。下载：</p>
+        <pre class="code-block"><code># Using the Hugging Face CLI
+pip install huggingface_hub
+huggingface-cli download bones-studio/seed --repo-type dataset --local-dir ./bones-seed</code></pre>
+        <p>SONIC 训练时，G1 CSV 用 <code>convert_soma_csv_to_motion_lib.py</code>（--fps 30 --fps_source 120）转换、用 <code>filter_and_copy_bones_data.py</code> 过滤，然后通过 <code>--training</code> Hugging Face 下载消费 SMPL 数据——完整命令在<a href="/zh/training/">训练页</a>与 <a href={OFFICIAL.docs.trainingData} rel="noopener">Training Data</a> 文档里。</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="数据采集常见问题" />
+  </div>
+</Base>

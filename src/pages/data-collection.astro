@@ -1,0 +1,204 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, RELATED } from "../data/site.js";
+const faqItems = [
+  { q: "Do I need a real robot to collect data for VLA fine-tuning?", a: "No — the all-in-one launcher supports simulation: python gear_sonic/scripts/launch_data_collection.py --sim starts run_sim_loop.py in a separate tmux window automatically, and the MuJoCo sim loop publishes camera images on the camera port (no camera server needed). The real-robot path additionally requires a camera server running onboard the robot." },
+  { q: "Where does the camera server run, and where does everything else run?", a: "The camera server is the only component that runs onboard the robot computer (e.g. Jetson Orin) where the physical OAK cameras are connected, publishing JPEG frames over ZMQ. Everything else — the C++ deployment, PICO teleop streamer, data exporter, and camera viewer — runs offboard on your workstation." },
+  { q: "Why did my whole dataset get dropped during processing?", a: "If you collected with VR 3-point tracking mode (VR_3PT), the teleop.smpl_pose column is all zeros because VR_3PT uses raw VR positions/orientations instead of SMPL body parameters. The default SMPL cleaning would then remove all frames — you must pass --no-remove-stale-smpl to process_dataset.py in that case." },
+  { q: "Which cameras are supported for data collection?", a: "The tested and supported setup uses Luxonis OAK cameras (OAK-D, OAK-1, etc.): a head/ego-view OAK camera and optional OAK wrist cameras. A 3D-printable mount for the head/ego-view OAK-D W camera is in hardware/camera_mount/ with print settings and a bill of materials. RealSense and USB webcam drivers exist in the codebase but have not been tested recently." },
+];
+const channelTable = [
+  ["observation.state.joint_position", "(N,)", "Actuated joint positions (rad)"],
+  ["observation.state.joint_velocity", "(N,)", "Actuated joint velocities (rad/s)"],
+  ["observation.state.body_rotation_6d", "(6,)", "Base orientation (6D rotation)"],
+  ["observation.state.projected_gravity", "(3,)", "Gravity vector in body frame"],
+  ["observation.images.ego_view", "(480, 640, 3)", "Ego camera image (saved as MP4 video)"],
+  ["observation.images.left_wrist", "(480, 640, 3)", "Left wrist camera (only with --record-wrist-cameras)"],
+  ["observation.images.right_wrist", "(480, 640, 3)", "Right wrist camera (only with --record-wrist-cameras)"],
+  ["action.joint_position", "(N,)", "Teleop target joint positions"],
+  ["action.body_rotation_6d", "(6,)", "Teleop target body rotation"],
+  ["annotation.human.action.task_description", "string", "Task prompt for this frame"],
+];
+const sourceTable = [
+  ["C++ deployment", "Workstation", "g1_debug", "5557", "Joint positions, velocities, IMU quaternion"],
+  ["C++ deployment", "Workstation", "robot_config", "5557", "One-shot robot configuration at startup"],
+  ["PICO teleop streamer", "Workstation", "pose", "5556", "SMPL body parameters (teleop target poses)"],
+  ["Camera server", "Robot", "(raw TCP)", "5555", "JPEG-compressed camera images (ego view + optional wrist views)"],
+];
+---
+<Base
+  title="SONIC data collection for VLA: LeRobot datasets, OAK cameras, ZMQ | MotionBricks.wiki"
+  description="Record LeRobot teleop datasets for Isaac-GR00T fine-tuning: offboard/onboard architecture, OAK-D cameras, camera server systemd, ZMQ formats, tmux launcher, and process_dataset.py cleaning."
+  path="/data-collection/"
+  crumbs={[{ label: "Data collection", href: "/data-collection/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Tutorial · commands verbatim</p>
+      <h1>SONIC data collection: <span style="color:var(--accent)">LeRobot datasets for VLA</span></h1>
+      <p class="lede">Record teleop demonstrations as <a href="https://github.com/huggingface/lerobot" rel="noopener">LeRobot</a> datasets for post-training with <a href="https://github.com/NVIDIA/Isaac-GR00T" rel="noopener">Isaac-GR00T</a>. The data exporter runs alongside the SONIC deployment and VR teleop stack, capturing robot state, SMPL teleop poses, and camera images at a configurable frequency. All commands are transcribed from the official <a href={OFFICIAL.docs.dataCollection} rel="noopener">Data Collection tutorial</a>.</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="On this page">
+      <p class="tt">On this page</p>
+      <a href="#model">Deployment model</a>
+      <a href="#cameras">Supported cameras</a>
+      <a href="#setup">Workstation setup</a>
+      <a href="#camera-server">Camera server</a>
+      <a href="#zmq">ZMQ format</a>
+      <a href="#launcher">Tmux launcher</a>
+      <a href="#manual">Manual setup</a>
+      <a href="#channels">Data channels</a>
+      <a href="#process">Processing</a>
+      <a href="#bones">BONES-SEED</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div>
+      <section id="model" class="block">
+        <h2>Deployment model</h2>
+        <div class="note">Everything runs <strong>offboard on your workstation</strong> except the <strong>camera server</strong>, which runs <strong>onboard the robot computer</strong> (e.g. Jetson Orin) where the physical cameras are connected. The camera server publishes JPEG frames over ZMQ to the workstation.</div>
+        <p>Prerequisites: complete the <a href={OFFICIAL.docs.quickstart} rel="noopener">Quick Start</a> (sim2sim loop, including the <a href="/installation-deploy/">deployment install</a> and model checkpoint download), complete the <a href={OFFICIAL.docs.vrTeleopSetup} rel="noopener">VR Teleop Setup</a> (PICO hardware calibrated, <code>.venv_teleop</code> ready), and have the camera server running on the robot. For simulation, the MuJoCo sim loop publishes camera images automatically — no camera server needed.</p>
+      </section>
+
+      <section id="cameras" class="block">
+        <h2>Supported cameras</h2>
+        <p>The tested and supported camera setup uses <strong>Luxonis OAK cameras</strong> (OAK-D, OAK-1, etc.): a head/ego-view OAK camera and optional OAK wrist cameras. Other camera drivers (RealSense, USB webcam) are included in the codebase but have not been tested recently. A 3D-printable mount for the head/ego-view <strong>OAK-D W</strong> camera is available under <code>hardware/camera_mount/</code> — its README covers print settings, the bill of materials, and how it mounts on the G1.</p>
+      </section>
+
+      <section id="setup" class="block">
+        <h2>One-time setup (workstation)</h2>
+        <p>Run the install script from the repo root to create a dedicated virtual environment with all data collection dependencies (LeRobot, PyAV, OpenCV, etc.):</p>
+        <pre class="code-block"><code>bash install_scripts/install_data_collection.sh</code></pre>
+        <p>This creates <code>.venv_data_collection</code> using Python 3.10 via <code>uv</code>, installing <code>gear_sonic[data_collection]</code> (lerobot, av, opencv-python, and other packages) plus <code>espeak</code> (system package) for voice feedback during recording. This environment is separate from <code>.venv_teleop</code> and <code>.venv_sim</code> — the data exporter has heavier ML dependencies not needed for teleop or simulation.</p>
+      </section>
+
+      <section id="camera-server" class="block">
+        <h2>Camera server setup (on-robot)</h2>
+        <p>The camera server is the <strong>only component that runs on the robot computer</strong> (e.g. Jetson Orin). Everything else — the C++ deployment, PICO teleop streamer, data exporter, and camera viewer — runs on your workstation. It captures frames from the OAK cameras physically connected to the robot and publishes them over ZMQ.</p>
+        <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl</code></pre>
+        <pre class="code-block"><code>bash install_scripts/install_camera_server.sh</code></pre>
+        <p>The script creates <code>.venv_camera</code> with <code>gear_sonic[camera]</code> (DepthAI, ZMQ, msgpack, OpenCV, tyro), detects connected OAK cameras and lists their MxIDs, prompts for each camera position (ego view, optionally left/right wrist) and device ID, then asks whether to install the camera server as a <strong>systemd service</strong> (recommended) — answering y generates the unit file, installs, enables, and starts it automatically. Verify:</p>
+        <pre class="code-block"><code>sudo systemctl status composed_camera_server.service
+journalctl -u composed_camera_server.service -f</code></pre>
+        <p><strong>Manual alternative:</strong> find device IDs with <code>python -c "import depthai as dai; print(dai.Device.getAllAvailableDevices())"</code> in <code>.venv_camera</code>, then start the server with <code>python -m gear_sonic.camera.composed_camera --ego-view-camera oak --ego-view-device-id &lt;YOUR_MXID&gt; --port 5555</code> (add <code>--left-wrist-camera</code> / <code>--right-wrist-camera</code> flags for wrist cams; see <code>--help</code> for <code>--fps</code>, <code>--use-mjpeg</code>, <code>--mjpeg-quality</code>). For manual systemd: edit <code>systemd/composed_camera_server.service</code>, copy to <code>/etc/systemd/system/</code>, then <code>daemon-reload</code> + <code>enable</code> + <code>start</code>. The G1 robot's default IP is <code>192.168.123.164</code>.</p>
+      </section>
+
+      <section id="zmq" class="block">
+        <h2>ZMQ message format</h2>
+        <p>The camera server publishes a single msgpack-encoded payload per frame cycle containing all camera images:</p>
+        <pre class="code-block"><code>{'{'}
+    "timestamps": {'{'} "ego_view": 1712345678.123, "left_wrist": 1712345678.125 {'}'},
+    "images": {'{'} "ego_view": "&lt;base64-jpeg&gt;", "left_wrist": "&lt;base64-jpeg&gt;" {'}'}
+{'}'}</code></pre>
+        <p>Images are JPEG-compressed (<strong>quality 80</strong>) and either base64-encoded strings or raw JPEG bytes (when MJPEG on-device encoding is enabled). The data exporter's <code>ComposedCameraClientSensor</code> handles both formats automatically.</p>
+      </section>
+
+      <section id="architecture" class="block">
+        <h2>Architecture and ZMQ sources</h2>
+        <table>
+          <thead><tr><th>Source</th><th>Runs on</th><th>ZMQ Topic</th><th>Default Port</th><th>Provides</th></tr></thead>
+          <tbody>{sourceTable.map((r) => <tr><td>{r[0]}</td><td>{r[1]}</td><td><code>{r[2]}</code></td><td>{r[3]}</td><td>{r[4]}</td></tr>)}</tbody>
+        </table>
+        <p>The data exporter subscribes to all three ZMQ sources — deployment state on port 5557, SMPL teleop poses on 5556, camera images on 5555 — and writes the LeRobot dataset (parquet + mp4).</p>
+      </section>
+
+      <section id="launcher" class="block">
+        <h2>Option A · All-in-one tmux launcher (recommended)</h2>
+        <p>The launcher starts all components in a single tmux session with four panes: C++ Deploy, PICO Teleop, Data Exporter, Camera Viewer (requires <code>tmux</code>: <code>sudo apt install tmux</code>). For simulation (the launcher starts <code>run_sim_loop.py</code> in a separate tmux window automatically):</p>
+        <pre class="code-block"><code>python gear_sonic/scripts/launch_data_collection.py --sim</code></pre>
+        <p>For real robot (camera server running on robot at <code>192.168.123.164</code>):</p>
+        <pre class="code-block"><code>python gear_sonic/scripts/launch_data_collection.py \
+    --camera-host 192.168.123.164 \
+    --task-prompt "pick up the cup"</code></pre>
+        <p>With wrist cameras (records ego view + left/right wrist streams):</p>
+        <pre class="code-block"><code>python gear_sonic/scripts/launch_data_collection.py \
+    --camera-host 192.168.123.164 \
+    --task-prompt "pick up the cup" \
+    --record-wrist-cameras</code></pre>
+        <p>No need to activate a virtual environment first — the launcher auto-detects and uses <code>.venv_data_collection</code> if required dependencies are missing from the current Python. Common flags: <code>--task-prompt</code> (default "demo"), <code>--dataset-name</code> (auto: timestamp), <code>--sim / --no-sim</code>, <code>--camera-host</code> (default localhost), <code>--camera-port</code> (5555), <code>--data-exporter-frequency</code> (50), <code>--deploy-checkpoint</code>, <code>--deploy-obs-config</code>, <code>--deploy-planner</code>, <code>--deploy-motion-data</code>, <code>--record-wrist-cameras</code>, <code>--no-text-to-speech</code>. Session management: <code>Ctrl+b</code> then arrow keys to switch panes, <code>Ctrl+b</code> then <code>d</code> to detach, <code>tmux attach -t sonic_data_collection</code> to reattach, <code>tmux kill-session -t sonic_data_collection</code> to kill.</p>
+        <p><strong>Recording controls:</strong> PICO VR controllers — <strong>Left Grip + A</strong> toggles recording (starts a new episode or stops and saves), <strong>Left Grip + B</strong> discards the current episode (saved to disk but flagged for removal during post-processing). Keyboard over ZMQ (port 5580): <code>c</code> toggles recording, <code>x</code> discards the episode. These work in any manager mode (POSE, PLANNER, etc.).</p>
+      </section>
+
+      <section id="manual" class="block">
+        <h2>Option B · Manual multi-terminal setup</h2>
+        <p><strong>Terminal 1 — MuJoCo Simulator</strong> (skip for real robot):</p>
+        <pre class="code-block"><code>source .venv_sim/bin/activate
+python gear_sonic/scripts/run_sim_loop.py \
+    --enable-image-publish --enable-offscreen --camera-port 5555</code></pre>
+        <p><strong>Terminal 2 — C++ Deployment</strong> (from <code>gear_sonic_deploy/</code>):</p>
+        <pre class="code-block"><code>cd gear_sonic_deploy
+source scripts/setup_env.sh
+./deploy.sh --input-type zmq_manager sim
+# Wait until you see "Init done"</code></pre>
+        <p><strong>Terminal 3 — PICO Teleop Streamer:</strong></p>
+        <pre class="code-block"><code>source .venv_teleop/bin/activate
+python gear_sonic/scripts/pico_manager_thread_server.py --manager</code></pre>
+        <p><strong>Terminal 4 — Data Exporter:</strong></p>
+        <pre class="code-block"><code>source .venv_data_collection/bin/activate
+python gear_sonic/scripts/run_data_exporter.py --task-prompt "pick up the cup"</code></pre>
+        <p><strong>Terminal 5 (optional) — Camera Viewer:</strong> <code>python gear_sonic/scripts/run_camera_viewer.py</code> in <code>.venv_data_collection</code>. Datasets are saved under <code>&lt;root-output-dir&gt;/&lt;dataset-name&gt;/</code> (default root <code>outputs</code>); omit <code>--dataset-name</code> for an auto timestamp, or reuse a name to append episodes. The standalone camera viewer also records raw MP4 reference videos (<code>R</code> start/stop, <code>Q</code> quit) to <code>camera_recordings/rec_&lt;timestamp&gt;/</code>.</p>
+      </section>
+
+      <section id="channels" class="block">
+        <h2>Recorded data channels</h2>
+        <table>
+          <thead><tr><th>Feature</th><th>Shape</th><th>Description</th></tr></thead>
+          <tbody>{channelTable.map((r) => <tr><td><code>{r[0]}</code></td><td><code>{r[1]}</code></td><td>{r[2]}</td></tr>)}</tbody>
+        </table>
+        <p>Datasets are saved in the <a href="https://github.com/huggingface/lerobot" rel="noopener">LeRobot v2.1</a> format under <code>&lt;root-output-dir&gt;/&lt;dataset-name&gt;/</code>: <code>data/</code> (parquet: joint states, actions, annotations), <code>videos/</code> (H264-encoded MP4 per camera stream), <code>meta/</code> (info.json, modality.json, episodes.jsonl, tasks.jsonl).</p>
+      </section>
+
+      <section id="process" class="block">
+        <h2>Post-processing datasets</h2>
+        <p>All commands run in <code>.venv_data_collection</code>. <strong>Remove discarded episodes</strong> (flagged with <code>x</code> or Left Grip + B) — default behavior removes them so they are excluded from fine-tuning; pass <code>--no-remove-discarded</code> to keep them for inspection:</p>
+        <pre class="code-block"><code># Clean a single dataset (removes discarded episodes + stale SMPL frames)
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/my_dataset \
+    --output-path outputs/my_dataset_cleaned</code></pre>
+        <p><strong>Remove stale SMPL frames</strong> — teleop pauses or ZMQ frame drops create frames where <code>teleop.smpl_pose</code> is all zeros; the script also removes consecutive frozen (identical) lead-in frames that precede them. In-place or non-destructive:</p>
+        <pre class="code-block"><code># Clean a single dataset in-place
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/my_dataset
+
+# Clean and write to a new directory (non-destructive)
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/my_dataset \
+    --output-path outputs/my_dataset_cleaned</code></pre>
+        <div class="warn"><strong>VR_3PT trap:</strong> if you collected data using VR 3-point tracking mode (VR_3PT), <code>teleop.smpl_pose</code> is all zeros because VR_3PT uses raw VR positions/orientations instead of SMPL body parameters. You <strong>must</strong> disable SMPL cleaning to avoid dropping all frames:
+        <pre class="code-block"><code>python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/my_dataset \
+    --output-path outputs/my_dataset_cleaned \
+    --no-remove-stale-smpl</code></pre>
+        </div>
+        <p><strong>Merge multiple datasets</strong> (validates all sessions share the same <code>script_config</code> robot configuration):</p>
+        <pre class="code-block"><code># Merge by listing datasets on the command line
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-path outputs/session1 outputs/session2 outputs/session3 \
+    --output-path outputs/merged_dataset
+
+# Or use a text file (one dataset path per line, # for comments)
+python gear_sonic/scripts/process_dataset.py \
+    --dataset-list datasets.txt \
+    --output-path outputs/merged_dataset</code></pre>
+        <p>SMPL cleaning applies by default during merging — it removes entire frames where the SMPL teleop pose is stuck at zeros (operator pauses, ZMQ packet-drop periods), plus consecutive frozen frames leading into a zero block. Add <code>--no-remove-stale-smpl</code> to skip cleaning and merge only. The output dataset is directly compatible with the <a href="https://github.com/NVIDIA/Isaac-GR00T" rel="noopener">Isaac-GR00T</a> post-training pipeline — next step is the <a href="/vla-workflow/">VLA workflow</a>.</p>
+      </section>
+
+      <section id="bones" class="block">
+        <h2>BONES-SEED: the offline motion corpus</h2>
+        <p>Beyond your own teleop demonstrations, the training-data stack builds on <a href={RELATED.bonesSeed} rel="noopener">BONES-SEED</a> — an open dataset of <strong>142,220 annotated human motion animations</strong> (71,132 original + 71,088 mirrored, ~288 hours at 120 fps) from 522 actors, in SOMA and Unitree G1 formats with natural language descriptions and temporal segmentation. Each motion comes in three formats: SOMA Proportional (BVH), SOMA Uniform (BVH), and Unitree G1 (CSV) retargeted to the G1 humanoid. Download:</p>
+        <pre class="code-block"><code># Using the Hugging Face CLI
+pip install huggingface_hub
+huggingface-cli download bones-studio/seed --repo-type dataset --local-dir ./bones-seed</code></pre>
+        <p>For SONIC training, the G1 CSVs are converted with <code>convert_soma_csv_to_motion_lib.py</code> (--fps 30 --fps_source 120) and filtered with <code>filter_and_copy_bones_data.py</code>, then consumed via the <code>--training</code> Hugging Face download for SMPL data — full commands on the <a href="/training/">training page</a> and in the <a href={OFFICIAL.docs.trainingData} rel="noopener">Training Data</a> doc.</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Data collection FAQ" />
+  </div>
+</Base>

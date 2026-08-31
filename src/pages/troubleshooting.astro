@@ -1,0 +1,62 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, KNOWN_ISSUES } from "../data/site.js";
+// GR00T-WBC official troubleshooting (from user_guide/troubleshooting.md) — key issues
+const issues = [
+  { id: "isaaclab-missing", code: "ModuleNotFoundError: No module named 'isaaclab'", title: "Isaac Lab not installed", desc: "Training or eval exits with an import error. Isaac Lab is not a pip dependency — it must be installed separately following the official Isaac Lab install guide, then activate the correct environment (conda activate env_isaaclab)." },
+  { id: "lfs-meshes", code: "Mesh files are tiny text files", title: "Git LFS not installed", desc: "Meshes (.stl/.STL) are ~130 bytes containing version https://git-lfs.github.com/spec/v1 — the repo was cloned without LFS. Fix: sudo apt install git-lfs; git lfs install; git lfs pull. Verify main.urdf is ~60KB+, not ~130 bytes.", fix: "sudo apt install git-lfs && git lfs install && git lfs pull" },
+  { id: "size-mismatch", code: "RuntimeError: size mismatch", title: "Checkpoint vs config mismatch", desc: "e.g. 'size mismatch for actor_module.decoders.g1_dyn.module.0.weight' — the experiment config defines a different network architecture than the checkpoint. The released sonic_release checkpoint uses hidden_dims: [2048, 2048, 1024, 1024, 512, 512]. Match your config to the checkpoint's config.yaml." },
+  { id: "tensorrt-version", code: "TensorRT version mismatch", title: "Silently wrong inference", desc: "A different TensorRT version than required produces silently wrong inference results — the model runs without errors but outputs incorrect actions. x86_64 desktop requires TensorRT 10.13; Jetson / G1 onboard Orin requires 10.7 (JetPack 6). Verify with echo $TensorRT_ROOT and ls $TensorRT_ROOT/lib/libnvinfer.so*.", fix: "Use exact versions: 10.13 (x86_64) / 10.7 (Jetson, JetPack 6); download TAR from NVIDIA Developer" },
+  { id: "zmq-5557", code: "deploy.sh fails to bind ZMQ port 5557", title: "Unitree iphone_server service conflict", desc: "On Orin, a Unitree system service (iphone_server.service) already listens on port 5557.", fix: "sudo systemctl stop iphone_server.service (disable across reboots: sudo systemctl disable iphone_server.service)" },
+  { id: "cyclonedds", code: "ChannelFactory create domain error", title: "CycloneDDS domain conflict", desc: "run_sim_loop.py crashes with a cyclonedds.domain.Domain init error — the SimulatorFactory reinitializes a channel already created. Known issue #77: comment out the duplicate channel init, or ensure no other DDS process uses the same domain." },
+  { id: "docker-mujoco", code: "MuJoCo viewer black in Docker", title: "Intel iGPU / NVIDIA dGPU conflict", desc: "Black or garbled MuJoCo window inside Docker on Intel display controller machines. Fix: force NVIDIA rendering (__NV_PRIME_RENDER_OFFLOAD=1, __GLX_VENDOR_LIBRARY_NAME=nvidia) or run with --gpus all -e DISPLAY=$DISPLAY. See issue #25." },
+  { id: "smpl-drift", code: "SMPL tracking unstable / drifts", title: "Coordinate convention mismatch", desc: "SMPL data may have mismatched conventions (y-up vs z-up), wrong joint ordering, or poor retargeting. Verify smpl_y_up: true if y-up, check SMPL PKLs have smpl_joints shape (T, 24, 3), and try smpl_motion_file: dummy first to isolate the robot encoder." },
+  { id: "robot-explodes", code: "Robot explodes / falls on first frame", title: "Init state or gains wrong", desc: "Usually one of: wrong init_state.pos z-height, KP/KD too low or too high, action scale too large, or wrong default joint angles. Debug with num_envs=1 headless=False and watch the first frames." },
+  { id: "body-not-found", code: "RuntimeError: body 'xxx' not found", title: "Config references a missing body", desc: "A config YAML references a body name that doesn't exist on your robot (common when using G1 configs with a different robot like H2). grep -rn the failing body name in gear_sonic/config/ and override it, or see the new embodiments guide." },
+];
+const faqItems = [
+  { q: "Why are my G1 mesh files only ~130 bytes?", a: "Git LFS was not installed before cloning — the meshes are LFS pointers. Run sudo apt install git-lfs, git lfs install, then git lfs pull, and verify main.urdf is ~60KB+, not ~130 bytes." },
+  { q: "Why does my SONIC checkpoint give wrong robot behavior on the real robot but works in sim?", a: "TensorRT version mismatch is the classic cause: a different TensorRT version than required produces silently wrong inference results. Use exactly TensorRT 10.13 on x86_64 desktop and 10.7 on Jetson / G1 onboard Orin (JetPack 6), then rebuild the C++ deployment binary." },
+  { q: "What does a size mismatch error when loading a checkpoint mean?", a: "The experiment config defines a different network architecture than the checkpoint was trained with — often from overriding hidden_dims. Match your config to the checkpoint's saved config.yaml; the released sonic_release checkpoint uses hidden_dims [2048, 2048, 1024, 1024, 512, 512]." },
+  { q: "The robot falls over instantly when simulation starts — why?", a: "Usually one of: wrong init state height (init_state.pos z-value), KP/KD values wrong (too low = no holding torque, too high = unstable), action scale too large, or wrong default joint angles. Debug with num_envs=1 headless=False and watch the first frames." },
+];
+---
+<Base
+  title="GR00T / SONIC troubleshooting: the master error table | MotionBricks.wiki"
+  description="The consolidated troubleshooting table for the GR00T-WholeBodyControl stack: Isaac Lab import errors, Git LFS mesh pointers, TensorRT version mismatches, ZMQ port conflicts, SMPL drift and more — from the official docs."
+  path="/troubleshooting/"
+  crumbs={[{ label: "Troubleshooting", href: "/troubleshooting/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Master table · from official docs</p>
+      <h1>GR00T / SONIC troubleshooting: <span style="color:var(--accent)">the master table</span></h1>
+      <p class="lede">Every error class from the official <a href={OFFICIAL.docs.troubleshooting} rel="noopener">troubleshooting guide</a>, plus the MotionBricks Known Issues — one page, searchable. If your problem isn't here, the official page points to <a href={OFFICIAL.parentRepo} rel="noopener">GitHub issues</a>.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>GR00T-WBC stack errors</h2>
+    <div class="post-list">
+      {issues.map((i) => (
+        <article class="post-item" id={i.id}>
+          <h3><code>{i.code}</code> — {i.title}</h3>
+          <p style="color:var(--ink-2)">{i.desc}</p>
+          {i.fix ? <div class="fixbox"><strong>Fix:</strong> <code>{i.fix}</code></div> : null}
+        </article>
+      ))}
+    </div>
+    <p style="margin-top:18px">More: the full official list covers trl/transformers version conflicts, motion file path errors, and body name configs — <a href={OFFICIAL.docs.troubleshooting} rel="noopener">read it directly</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>MotionBricks known issues (README)</h2>
+    <ul>
+      {KNOWN_ISSUES.map((k) => <li><strong>{k.t}:</strong> {k.d}</li>)}
+    </ul>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Troubleshooting FAQ" />
+  </div>
+</Base>

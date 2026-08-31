@@ -1,0 +1,96 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, RELATED } from "../data/site.js";
+const faqItems = [
+  { q: "Is MotionBricks the same thing as SONIC?", a: "No. SONIC (released as GEAR-SONIC) is a tracking-based whole-body controller: it takes a reference motion (SMPL pose, G1 motion, or teleoperation input) and tracks it on the robot at 50 Hz. MotionBricks is a real-time generative model that synthesizes motion from latent tokens and text-style primitives. The README's Related Work states they are complementary: together, GEAR-SONIC and MotionBricks anchor NVIDIA's GR00T Whole-Body Control initiative." },
+  { q: "Which should I use — MotionBricks or SONIC?", a: "It depends on the problem. If you need a robot to follow a reference motion, track a teleoperator, or execute a VLA policy, use the SONIC controller. If you need to generate or author novel motion — stylized locomotion, transitions, object interactions — without a recorded reference, that is MotionBricks' domain. They are not substitutes; they solve different halves of the motion problem." },
+  { q: "Is Kimodo the same as MotionBricks?", a: "No. The official README calls Kimodo a sibling project focused on offline motion generation, complementary to MotionBricks' real-time runtime. Kimodo generates text-to-motion offline; MotionBricks synthesizes motion in real time (15,000 FPS, ~2 ms latency). Kimodo is developed by the Sibling Lab and ships in a separate repository (nv-tlabs/kimodo)." },
+  { q: "Can I use MotionBricks output as SONIC input?", a: "That is exactly the direction the README points to: MotionBricks' full release — a model fully embedded in GR00T whole-body control's robotics formulation — is targeted for approximately one month out. The current preview release ships the interactive demo, checkpoints, and training code; the tracking side is SONIC, documented across this site." },
+];
+const whichTable = [
+  ["SONIC (GEAR-SONIC)", "Tracking-based whole-body control", "Reference motion exists: SMPL pose, G1 motion file, teleoperation, or VLA execution", "Follows the reference at 50 Hz; 64-dim latent motion tokens; TensorRT C++ deployment"],
+  ["MotionBricks", "Generative real-time motion synthesis", "No reference: author novel locomotion, styles, transitions, object interactions", "15,000 FPS / ~2 ms latency; smart primitives + latent backbone; zero-shot synthesis"],
+  ["Kimodo", "Offline motion generation (sibling project)", "Text prompt → pre-rendered motion clip, generated ahead of time", "Text-to-motion, offline; complementary to MotionBricks' real-time runtime"],
+];
+---
+<Base
+  title="SONIC vs MotionBricks vs Kimodo: tracking, generation, and offline | MotionBricks.wiki"
+  description="GEAR-SONIC (tracking) vs MotionBricks (generative, 15,000 FPS) vs Kimodo (offline sibling): how they complement each other in NVIDIA's GR00T WBC plan — official README framing."
+  path="/sonic-vs-motionbricks/"
+  crumbs={[{ label: "SONIC vs MotionBricks", href: "/sonic-vs-motionbricks/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Comparison · official README framing</p>
+      <h1>SONIC vs MotionBricks: <span style="color:var(--accent)">tracking and generation, not rivals</span></h1>
+      <p class="lede">Both projects ship inside the same repository, and the README is explicit about how they relate: MotionBricks is a real-time generative framework that delivers high-quality, zero-shot motion synthesis at 15,000 FPS — <strong>complementing the tracking-based GEAR-SONIC controllers in this repo</strong>. This page transcribes that framing and helps you pick the right tool. Sources: the <a href={OFFICIAL.parentRepo} rel="noopener">GR00T-WholeBodyControl README</a> and the <a href={OFFICIAL.repo} rel="noopener">MotionBricks README</a>.</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="On this page">
+      <p class="tt">On this page</p>
+      <a href="#roles">The three roles</a>
+      <a href="#comparison">Side by side</a>
+      <a href="#sonic">SONIC: tracking</a>
+      <a href="#motionbricks">MotionBricks: generation</a>
+      <a href="#kimodo">Kimodo: offline</a>
+      <a href="#choose">Which to use</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div>
+      <section id="roles" class="block">
+        <h2>The three roles in one stack</h2>
+        <p>NVIDIA's GR00T Whole-Body Control (WBC) effort is not one model — it is a stack. The parent README positions the pieces like this:</p>
+        <ul>
+          <li><strong>SONIC</strong> — the controller that makes a robot move. Tracking-based: it consumes a reference (SMPL pose, G1 motion, teleoperation) and produces whole-body motor commands.</li>
+          <li><strong>MotionBricks</strong> — the generator that invents the reference. Real-time latent generative model for interactive motion control in animation and robotics.</li>
+          <li><strong>Kimodo</strong> — an offline text-to-motion sibling, useful when you want the motion before you need it, not live.</li>
+        </ul>
+        <div class="note">Official README (Related Work): <em>"Together with MotionBricks, GEAR-SONIC anchors NVIDIA's GR00T Whole-Body Control initiative."</em> And for the sibling project: <em>"Kimodo — A sibling project focused on offline motion generation, complementary to MotionBricks' real-time runtime."</em> Both sentences are copied verbatim.</div>
+      </section>
+
+      <section id="comparison" class="block">
+        <h2>Side by side</h2>
+        <table>
+          <thead><tr><th>Project</th><th>What it is</th><th>Use when</th><th>Numbers (official)</th></tr></thead>
+          <tbody>{whichTable.map((r) => <tr><td><strong>{r[0]}</strong></td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td></tr>)}</tbody>
+        </table>
+      </section>
+
+      <section id="sonic" class="block">
+        <h2>SONIC: the tracking-based controller</h2>
+        <p>SONIC is a humanoid behavior foundation model that gives robots a core set of motor skills learned from large-scale human motion data. Rather than building separate controllers for predefined motions, it uses motion tracking as a scalable training task, enabling a single unified policy to produce natural whole-body movement — from walking and crawling to teleoperation and multi-modal control. It generalizes beyond the motions seen in training and serves as a foundation for higher-level planning and interaction.</p>
+        <p>Practical consequences: SONIC needs a reference to track. That reference can come from an SMPL pose stream (teleoperation), a G1 motion file, or a planner. Deployment is C++ + TensorRT; the controller runs at 50 Hz with 64-dimensional latent motion tokens. The three released G1 checkpoints (Default, Low-latency, v1.1) and how to pick them: <a href="/sonic-models/">SONIC models page</a>. Deployment steps: <a href="/installation-deploy/">install &amp; deploy</a>.</p>
+      </section>
+
+      <section id="motionbricks" class="block">
+        <h2>MotionBricks: the real-time generator</h2>
+        <p>MotionBricks is a real-time generative framework that transforms interactive motion control for animation and robotics. It combines a large-scale latent backbone with intuitive "smart primitives" to deliver high-quality, zero-shot motion synthesis at 15,000 FPS, allowing users to build complex animations and robotic movements like assembling bricks. It is not a controller: it produces motion, not motor commands.</p>
+        <p>Three model components — VQVAE (motion tokenizer), pose model, root model — trained on the BONES-SEED corpus (142,220 retargeted G1 trajectories, ~288 hours). The interactive G1 demo is keyboard-driven in a MuJoCo viewer; checkpoints are opt-in Git LFS downloads. See <a href="/architecture/">architecture</a>, <a href="/motion-representation/">motion representation</a>, and <a href="/setup/">setup</a> for the full picture. Training scripts default to <strong>synthetic data</strong> so the pipeline can be verified end-to-end without the real dataset.</p>
+      </section>
+
+      <section id="kimodo" class="block">
+        <h2>Kimodo: the offline sibling</h2>
+        <p>From the official README: <em>"Kimodo — A sibling project focused on offline motion generation, complementary to MotionBricks' real-time runtime."</em> Kimodo generates text-to-motion offline, ahead of runtime; it is the project powering the text-to-motion feature in the <a href={RELATED.sonicPage} rel="noopener">SONIC web demo</a>. It lives in a separate repository (<a href={RELATED.kimodoRepo} rel="noopener">nv-tlabs/kimodo</a>) with its own project page (<a href={RELATED.kimodoPage} rel="noopener">research.nvidia.com</a>). "Sibling" means related but separate: same family, different runtime profile — offline vs real-time.</p>
+      </section>
+
+      <section id="choose" class="block">
+        <h2>Which one do you actually need?</h2>
+        <ul>
+          <li><strong>You have a reference to follow</strong> (teleop stream, motion file, VLA policy output) and need a robot to execute it → <strong>SONIC</strong>. Start at <a href="/installation-deploy/">install &amp; deploy</a>.</li>
+          <li><strong>You want to author or generate motion</strong> (stylized locomotion, transitions, interactions) with no recorded reference → <strong>MotionBricks</strong>. Start at <a href="/setup/">setup</a> and the <a href="/g1-demo/">G1 demo</a>.</li>
+          <li><strong>You want text-to-motion produced ahead of time</strong>, then played back → <strong>Kimodo</strong> (offline), or keep the motion generation live with MotionBricks.</li>
+          <li><strong>You are collecting data or building a VLA pipeline</strong> — that is the SONIC + teleop stack: <a href="/data-collection/">data collection</a> → <a href="/vla-workflow/">VLA workflow</a>.</li>
+        </ul>
+        <p>And a reality check, straight from the docs: MotionBricks' full release — a model fully embedded in GR00T whole-body control's robotics formulation, with the complete training pipeline — is targeted for approximately one month out. The preview release ships the demo, checkpoints, and training code; the tracking side of the stack is production-ready and documented across this site.</p>
+        <div class="note">One claim this site does not repeat: the community-circulated "5,000 FPS" figure for MotionBricks is wrong — the official project page and README state 15,000 FPS. See the <a href="/gr00t-sonic/">GR00T/SONIC overview</a> for the corrections.</div>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="SONIC vs MotionBricks FAQ" />
+  </div>
+</Base>

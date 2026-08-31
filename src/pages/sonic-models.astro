@@ -1,0 +1,80 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, SONIC_MODELS, SONIC_COMMON, SONIC_CAVEAT } from "../data/site.js";
+const faqItems = [
+  { q: "Which SONIC model should I use?", a: "Use Default SONIC for general tracking, planning, teleoperation and compatibility with existing deployments. Use Low-latency teleoperation for the most responsive whole-body teleoperation and VLA execution (4-frame, ~80 ms lookahead). Use SONIC v1.1 when you need heading-stable whole-body teleoperation or SONIC-backed VLA policies (10-frame, ~200 ms lookahead, robot-heading-normalized, wrist-pose augmented)." },
+  { q: "What is the difference between the SONIC checkpoints?", a: "They differ in reference horizon and intended deployment: Default uses 10 future frames at 20 ms spacing (~200 ms lookahead, step5 observations), Low-latency uses 4 frames (~80 ms, step1), and v1.1 uses 10 frames (~200 ms) with robot-heading-normalized target orientation and wrist-pose augmentation." },
+  { q: "Is lookahead the same as latency?", a: "No. The lookahead values describe the reference horizon presented to the controller. They are not measurements of total end-to-end teleoperation latency, which also includes sensing, networking, preprocessing, and inference — this is stated verbatim in the official model card." },
+  { q: "Where are the SONIC checkpoints hosted?", a: "On Hugging Face under nvidia/GEAR-SONIC. Default SONIC files sit at the top level (model_encoder.onnx, model_decoder.onnx, observation_config.yaml, training checkpoint sonic_release/last.pt); low-latency under low_latency/ and v1.1 under sonic_v1_1/. Download with python download_from_hf.py in the repository." },
+];
+const releaseFiles = [
+  { model: "Default SONIC", deploy: "model_encoder.onnx, model_decoder.onnx, observation_config.yaml", pt: "sonic_release/last.pt, sonic_release/config.yaml" },
+  { model: "Low-latency teleoperation", deploy: "low_latency/model_encoder.onnx, low_latency/model_decoder.onnx, low_latency/observation_config.yaml", pt: "low_latency/last.pt, low_latency/config.yaml, low_latency/model_config.yaml" },
+  { model: "SONIC v1.1", deploy: "sonic_v1_1/model_encoder.onnx, sonic_v1_1/model_decoder.onnx, sonic_v1_1/observation_config.yaml", pt: "sonic_v1_1/last.pt, sonic_v1_1/config.yaml, sonic_v1_1/model_config.yaml" },
+];
+---
+<Base
+  title="Which SONIC model to use — Default, Low-latency, v1.1 comparison | MotionBricks.wiki"
+  description="Compare the three GEAR-SONIC checkpoints (Default / Low-latency / SONIC v1.1): SMPL reference frames, lookahead 200ms vs 80ms, intended use, released files and Hugging Face locations — from the official model card."
+  path="/sonic-models/"
+  crumbs={[{ label: "SONIC models", href: "/sonic-models/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Selector guide · from the official model card</p>
+      <h1>Which SONIC model do you need? <span style="color:var(--accent)">Three checkpoints, one decision</span></h1>
+      <p class="lede">GEAR-SONIC ships three whole-body controller checkpoints for the Unitree G1. They differ in reference horizon and deployment intent — pick by how you will use the controller, not by version number. Everything below is transcribed from the <a href={OFFICIAL.docs.modelCard} rel="noopener">official model card</a>.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Available models</h2>
+    <table>
+      <thead><tr><th>Model</th><th>SMPL reference input</th><th>Intended use</th></tr></thead>
+      <tbody>
+        {SONIC_MODELS.map((m) => (
+          <tr>
+            <td><strong>{m.name}</strong></td>
+            <td>{m.lookahead}</td>
+            <td>{m.use}{m.link ? <> <a href={m.link} rel="noopener">HF files →</a></> : null}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <div class="note"><strong>All three share the same controller core:</strong> {SONIC_COMMON}</div>
+    <div class="warn"><strong>Read before benchmarking:</strong> {SONIC_CAVEAT}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Pick by use case</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Default SONIC</h3>
+        <p>Motion tracking, planning, teleoperation, and compatibility with existing deployments. The safe default when you are not sure — it is the original general-purpose release.</p>
+      </div>
+      <div class="card">
+        <h3>Low-latency teleoperation</h3>
+        <p>Most responsive whole-body teleoperation and VLA execution. 4-frame lookahead (~80 ms). Use its encoder, decoder, and observation config together — do not mix with the default files.</p>
+      </div>
+      <div class="card">
+        <h3>SONIC v1.1</h3>
+        <p>Heading-stable whole-body teleoperation and SONIC-backed VLA policies. Robot-heading-normalized target orientation, trained with wrist-pose augmentation. Not the low-latency model.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Released files</h2>
+    <table>
+      <thead><tr><th>Model</th><th>Deployment files</th><th>PyTorch + config</th></tr></thead>
+      <tbody>
+        {releaseFiles.map((r) => <tr><td><strong>{r.model}</strong></td><td><code>{r.deploy}</code></td><td><code>{r.pt}</code></td></tr>)}
+      </tbody>
+    </table>
+    <p>Deployment uses C++ and TensorRT; the PyTorch checkpoints support Isaac Lab evaluation and continued training. Model weights are covered by the <a href="https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/LICENSE" rel="noopener">NVIDIA Open Model License</a>.</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="SONIC model FAQ" />
+  </div>
+</Base>

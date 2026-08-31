@@ -1,0 +1,82 @@
+---
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL } from "../../data/site.js";
+const bodyFeatures = [
+  { f: "ric_data", d: "99", desc: "全局关节位置，逐帧减去投影后的（XZ）根位置，作用于 33 个非根关节。未做航向归一化。" },
+  { f: "global_rot_data", d: "204", desc: "全部 34 个关节的全局（世界系）6D 连续旋转。" },
+  { f: "local_vel", d: "102", desc: "全局系下的逐关节速度，由世界位置做有限差分计算。" },
+  { f: "foot_contacts", d: "4", desc: "左脚踝、左脚趾、右脚踝、右脚趾的二进制接触状态。" },
+];
+const rootFeatures = [
+  { f: "global_root_pos", d: "3", desc: "世界系下的 XYZ 位置（训练与推理时，第一帧的根 XZ 放在原点）。" },
+  { f: "global_root_heading", d: "2", desc: "航向表示（全局系）。" },
+];
+const localRootFeatures = [
+  { f: "local_root_pos", d: "2", desc: "航向旋转局部系下的 XZ 位置。" },
+  { f: "local_root_heading", d: "2", desc: "相对根当前航向的航向偏移。" },
+];
+---
+<Base
+  title="MotionBricks 动作表示：418 维特征分解 | MotionBricks.wiki"
+  description="MotionBricks 动作表示详解：418 维逐帧特征向量（409 身体 + 5/4 根）、Global 与 Local 子集、DualRootGlobalJoints、G1Skeleton34——来自 motion_representation.md。"
+  path="/motion-representation/"
+  lang="zh"
+  crumbs={[{ label: "动作表示", href: "/zh/motion-representation/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">参考 · 来自 motion_representation.md</p>
+      <h1>418 维动作表示，<span style="color:var(--accent)">逐项拆解</span></h1>
+      <p class="lede">MotionBricks 把每一帧动作表示为一个归一化特征向量。下面的分解逐字摘自官方 <a href={OFFICIAL.motionReprDocs} rel="noopener">motion_representation.md</a>——每个维度数字都是原样。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>总体结构</h2>
+    <p>该表示把<strong>根运动</strong>（机器人骨盆的全局位置与航向）与<strong>身体运动</strong>（关节旋转、位置、速度与脚部接触）分开。这让 root 模型与 pose/分词器模块可以操作同一表示的不同子集。</p>
+    <ul>
+      <li><strong>Global</strong>（<code>GlobalRootGlobalJoints</code>，<strong>414 维</strong>）—— root 模型主要用它，做精确的全局根控制。数据加载器直接返回的也是它。</li>
+      <li><strong>Local</strong>（<code>LocalRootGlobalJoints</code>，<strong>413 维</strong>）—— pose/分词器模块使用。</li>
+    </ul>
+    <p>两个子集共享相同的 409 维身体特征，只差根参数化（5 维全局 vs 4 维局部）。它们通过 <code>dual_rep.global_to_local</code> / <code>dual_rep.local_to_global</code> 无损互转。训练时，批次从加载器以全局表示出来，在进入 pose/分词器模块前被即时转成局部；每个批次字典里的 <code>"motion"</code> 张量始终是全局的。</p>
+    <p>当前配置在 <strong>G1Skeleton34</strong> 骨架（34 关节的 Unitree G1）上使用 <strong>DualRootGlobalJoints</strong> 表示。完整特征向量<strong>每帧 418 维</strong>，由共享 409 维身体特征的 414 维全局子集与 413 维局部子集组成。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>身体特征（409 维）</h2>
+    <p>全局与局部根表示共用，定义在全局（世界）系。 <code>local_vel</code> 上的 <code>local_</code> 前缀是命名遗留——在 <code>DualRootGlobalJoints</code>（<code>removing_heading=False</code>）里，速度并不做航向旋转。</p>
+    <table>
+      <thead><tr><th>特征</th><th>维度</th><th>描述</th></tr></thead>
+      <tbody>
+        {bodyFeatures.map((r) => <tr><td><code>{r.f}</code></td><td>{r.d}</td><td>{r.desc}</td></tr>)}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block wrap">
+    <h2>全局根特征（5 维）</h2>
+    <p>供全局表示子集使用（root 模型消费）。</p>
+    <table>
+      <thead><tr><th>特征</th><th>维度</th><th>描述</th></tr></thead>
+      <tbody>
+        {rootFeatures.map((r) => <tr><td><code>{r.f}</code></td><td>{r.d}</td><td>{r.desc}</td></tr>)}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block wrap">
+    <h2>局部根特征（4 维）</h2>
+    <p>供局部表示子集使用（pose/分词器模块消费）。</p>
+    <table>
+      <thead><tr><th>特征</th><th>维度</th><th>描述</th></tr></thead>
+      <tbody>
+        {localRootFeatures.map((r) => <tr><td><code>{r.f}</code></td><td>{r.d}</td><td>{r.desc}</td></tr>)}
+      </tbody>
+    </table>
+    <p>核算一下：409 身体 + 5 全局根 = 414（GlobalRootGlobalJoints）；409 + 4 局部根 = 413（LocalRootGlobalJoints）；两者合起来定义 418 维的 DualRootGlobalJoints 向量。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>来源</h2>
+    <p>完整推导与细节：<a href={OFFICIAL.motionReprDocs} rel="noopener">motion_representation.md</a> 与 MotionBricks 论文（<a href={OFFICIAL.arxiv} rel="noopener">arXiv 2604.24833</a>）。</p>
+  </section>
+</Base>

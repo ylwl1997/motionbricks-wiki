@@ -1,0 +1,220 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, RELATED } from "../../data/site.js";
+const faqItems = [
+  { q: "在新机器人上训练 SONIC 要动哪些文件？", a: "七项：gear_sonic/data/assets/robot_description/urdf/&lt;robot&gt;/ 下的 URDF + 网格、mjcf/&lt;robot&gt;.xml 的 MJCF、机器人配置 gear_sonic/envs/manager_env/robots/&lt;robot&gt;.py、robots/__init__.py 里的导入、modular_tracking_env_cfg.py 里 robot_mapping 字典的一个条目、trl/utils/order_converter.py 里的转换器类，以及实验配置 sonic_&lt;robot&gt;.yaml。另外要在 termination、reward 与 command 的 YAML 里核对一遍 body 名。" },
+  { q: "什么是 Isaac Lab ↔ MuJoCo 索引映射，为什么它重要？", a: "Isaac Lab 与 MuJoCo 以不同顺序遍历运动学树，所以管线需要双向索引数组（isaaclab_to_mujoco_dof、mujoco_to_isaaclab_dof 以及对应的 body 数组）。官方文档称做对它们至关重要：如果映射错了，策略会收到打乱的观测并输出打乱的动作。验证方法：在两个仿真器里加载一个已知姿态，检查重排后的关节值是否一致。" },
+  { q: "新机器人的 KP/KD 值从什么开始调？", a: "从数据手册里真实电机的 armature（转子惯量）出发。对类人机器人来说，10 Hz 固有频率是个不错的起点——需要更硬/更快的跟踪就加大，需要柔顺就减小。阻尼比应 &gt;= 1.0（临界阻尼或过阻尼）以避免振荡；SONIC 用 2.0 效果很好。按电机类型分组关节——髋/膝电机比腕部电机强得多。" },
+  { q: "在新机器人上训练 SONIC 需要 SMPL 数据吗？", a: "不需要。PKL 文件里的 smpl_joints 字段供 SMPL 编码器使用，没有 SMPL 数据时可以全填零。如果完全没有 SMPL 数据，在配置里设 smpl_motion_file: dummy——管线会从机器人动作生成最小占位 SMPL 数据；能用，但 SMPL 编码器性能会弱一些。" },
+];
+const fileChecklist = [
+  ["gear_sonic/data/assets/robot_description/urdf/<robot>/", "新增", "Isaac Lab 仿真用的 URDF + 网格文件"],
+  ["gear_sonic/data/assets/robot_description/mjcf/<robot>.xml", "新增", "动作库正运动学用的 MuJoCo XML"],
+  ["gear_sonic/envs/manager_env/robots/<robot>.py", "新增", "机器人配置：关节、执行器、映射、动作尺度"],
+  ["gear_sonic/envs/manager_env/robots/__init__.py", "修改", "导入你的新机器人模块"],
+  ["gear_sonic/envs/manager_env/modular_tracking_env_cfg.py", "修改", "把机器人加进 robot_mapping 字典（约第 998 行）"],
+  ["gear_sonic/trl/utils/order_converter.py", "修改", "为关节/body 重排添加转换器类"],
+  ["gear_sonic/config/exp/manager/universal_token/all_modes/sonic_<robot>.yaml", "新增", "实验配置"],
+  ["配置 YAML（terminations、rewards、commands）", "核对", "body 名必须存在于你的机器人上"],
+];
+---
+<Base
+  title="在新机器人上跑 SONIC：embodiment 移植指南（G1 29 DOF → H2 31 DOF） | MotionBricks.wiki"
+  description="给 SONIC 添加新的类人 embodiment：七个要新增或修改的文件、IsaacLab↔MuJoCo 索引映射、KP/KD 调参、PKL 动作数据与重定向——以 Unitree H2（31 DOF）为官方示例。"
+  path="/new-embodiments/"
+  lang="zh"
+  crumbs={[{ label: "新 embodiment", href: "/zh/new-embodiments/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">训练指南 · 逐字来自官方文档</p>
+      <h1>在新机器人上跑 SONIC：<span style="color:var(--accent)">七个文件，一套映射</span></h1>
+      <p class="lede">SONIC 的训练管线围绕 Unitree G1（29 DOF）设计，但可以扩展到其他类人机器人。官方指南以 Unitree H2（31 DOF）为具体示例，带你过一遍所有要动的文件——这里的一切都逐字摘自 <a href={OFFICIAL.docs.newEmbodiments} rel="noopener">Training on New Embodiments</a> 文档。</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="本页目录">
+      <p class="tt">本页目录</p>
+      <a href="#files">要动的文件</a>
+      <a href="#models">机器人模型文件</a>
+      <a href="#config">机器人配置</a>
+      <a href="#mapping">索引映射</a>
+      <a href="#kpkd">KP/KD 调参</a>
+      <a href="#action">动作尺度</a>
+      <a href="#bodies">body 名</a>
+      <a href="#pkl">PKL 动作数据</a>
+      <a href="#retarget">重定向</a>
+      <a href="#exp">实验配置</a>
+      <a href="#train">训练</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+
+    <div>
+      <section id="files" class="block">
+        <h2>需要新增或修改的文件</h2>
+        <table>
+          <thead><tr><th>文件</th><th>操作</th><th>用途</th></tr></thead>
+          <tbody>{fileChecklist.map((f) => <tr><td><code>{f[0]}</code></td><td>{f[1]}</td><td>{f[2]}</td></tr>)}</tbody>
+        </table>
+        <p>完整的 H2 支持以参考实现形式随仓库发布：机器人配置、URDF + 网格、MJCF、实验配置、H2Converter 与 robot_mapping 条目全部存在——给你的机器人复制一份即可。</p>
+      </section>
+
+      <section id="models" class="block">
+        <h2>第 1 步 · 机器人模型文件</h2>
+        <pre class="code-block"><code>gear_sonic/data/assets/robot_description/
+|-- urdf/h2/
+|   |-- h2.urdf
+|   `-- meshes/          # STL/OBJ mesh files
+`-- mjcf/
+    `-- h2.xml           # MuJoCo XML</code></pre>
+        <p><strong>URDF</strong> 由 Isaac Lab 加载用于物理仿真。<strong>MJCF</strong> 由动作库用于在参考动作数据上计算正运动学。两者必须表示同一个机器人，关节名与树结构一致。确保你的 URDF 网格路径正确——像 <code>meshes/pelvis.stl</code> 这样的相对路径最稳妥；如果你的 URDF 用 <code>package://</code> 路径，把它们改成匹配目录结构。</p>
+      </section>
+
+      <section id="config" class="block">
+        <h2>第 2 步 · 机器人配置</h2>
+        <p>创建 <code>gear_sonic/envs/manager_env/robots/&lt;robot&gt;.py</code>——最重要的文件；它定义你的机器人如何接入训练管线。articulation 配置使用 Isaac Lab 的 <code>ArticulationCfg</code>，带 <code>UrdfFileCfg</code> spawn、<code>init_state</code>，以及每种电机类型一组 <code>ImplicitActuatorCfg</code>（腿、臂、腰、脚等）。文档里两条 init_state 提示：</p>
+        <ul>
+          <li><code>pos</code> 的 z 值是生成高度——设成让机器人以双脚略微离地开始站立。太低 = 第一帧脚就穿地。</li>
+          <li><code>joint_pos</code> 应该是稳定的站立姿态，取自你机器人真实的默认标定姿态或 MuJoCo 关键帧。</li>
+        </ul>
+      </section>
+
+      <section id="mapping" class="block">
+        <h2>关节与 body 顺序——关键部分</h2>
+        <p>Isaac Lab 与 MuJoCo 以不同顺序遍历运动学树。你必须定义双向索引映射。做法：在 Isaac Lab 里加载你的 URDF、在 MuJoCo 里加载你的 MJCF，打印关节/body 列表，然后计算重排索引。</p>
+        <pre class="code-block"><code># All bodies in IsaacLab traversal order (including root "pelvis")
+H2_ISAACLAB_JOINTS = [
+    "pelvis",
+    "left_hip_pitch_link",
+    "right_hip_pitch_link",
+    # ... all 32 bodies for H2
+]
+
+# Index arrays: position i in the output = position mapping[i] in the input
+H2_ISAACLAB_TO_MUJOCO_DOF = [...]   # len = num_dof (31 for H2)
+H2_MUJOCO_TO_ISAACLAB_DOF = [...]
+H2_ISAACLAB_TO_MUJOCO_BODY = [...]  # len = num_bodies (32 for H2)
+H2_MUJOCO_TO_ISAACLAB_BODY = [...]
+
+H2_ISAACLAB_TO_MUJOCO_MAPPING = {'{'}
+    "isaaclab_joints": H2_ISAACLAB_JOINTS,
+    "isaaclab_to_mujoco_dof": H2_ISAACLAB_TO_MUJOCO_DOF,
+    "mujoco_to_isaaclab_dof": H2_MUJOCO_TO_ISAACLAB_DOF,
+    "isaaclab_to_mujoco_body": H2_ISAACLAB_TO_MUJOCO_BODY,
+    "mujoco_to_isaaclab_body": H2_MUJOCO_TO_ISAACLAB_BODY,
+{'}'}</code></pre>
+        <div class="warn"><strong>把映射做对至关重要。</strong>如果映射错了，策略会收到打乱的观测并输出打乱的动作。验证方法：在两个仿真器里加载一个已知姿态，检查重排后关节值是否一致。</div>
+      </section>
+
+      <section id="kpkd" class="block">
+        <h2>执行器参数（KP/KD 调参）</h2>
+        <p>执行器刚度（KP）与阻尼（KD）对 sim-to-real 迁移与训练稳定性至关重要。SONIC 在 Isaac Lab 里使用隐式 PD 执行器。</p>
+        <pre class="code-block"><code># Derive from motor specs — these need tuning for your robot
+NATURAL_FREQ = 10 * 2.0 * 3.1415926535  # 10Hz natural frequency
+DAMPING_RATIO = 2.0                      # Overdamped for stability
+
+# Per-motor stiffness: KP = armature * omega^2
+STIFFNESS_5020 = ARMATURE_5020 * NATURAL_FREQ**2
+# Per-motor damping: KD = 2 * zeta * armature * omega
+DAMPING_5020 = 2.0 * DAMPING_RATIO * ARMATURE_5020 * NATURAL_FREQ</code></pre>
+        <p>调参指引（逐字）：</p>
+        <ul>
+          <li>从数据手册里真实电机的 <strong>armature</strong>（转子惯量）出发。</li>
+          <li><strong>固有频率</strong>控制响应速度。对类人机器人 10 Hz 是个不错的起点。需要更硬/更快的跟踪就加大，需要柔顺就减小。</li>
+          <li><strong>阻尼比</strong>应 &gt;= 1.0（临界阻尼或过阻尼）以避免振荡。SONIC 用 2.0 效果很好。</li>
+          <li><strong>不同的关节组需要不同的增益。</strong>髋/膝电机比腕部电机强得多。按电机类型分组关节（示例见 G1/H2 配置）。</li>
+          <li>如果训练不稳定（机器人爆炸或立刻摔倒），你的 KP/KD 值很可能不对——试试减小 KP 或增大 KD。</li>
+          <li>每个关节的 <strong>effort limits</strong>（最大扭矩）应与真实电机规格一致。</li>
+        </ul>
+      </section>
+
+      <section id="action" class="block">
+        <h2>动作尺度</h2>
+        <p>动作尺度把归一化的策略输出映射到关节位置目标。由 effort limit 与刚度计算：</p>
+        <pre class="code-block"><code>{'{'}
+H2_ACTION_SCALE = {'}'}
+for joint_name in joint_names:
+    H2_ACTION_SCALE[joint_name] = effort_limit[joint_name] / stiffness[joint_name]</code></pre>
+        <p>动作尺度越大 = 每次策略输出对应的关节运动越大。如果机器人动作太激进，减小动作尺度。然后在 <code>robots/__init__.py</code> 里注册模块，并把机器人加进 <code>modular_tracking_env_cfg.py</code> 的 <code>robot_mapping</code> 字典（约第 998 行）；字符串键（如 <code>"h2"</code>）就是你在实验配置里用作 <code>robot.type</code> 的那个值。</p>
+      </section>
+
+      <section id="bodies" class="block">
+        <h2>第 3 步 · 顺序转换器 + body 名兼容性</h2>
+        <p>在 <code>gear_sonic/trl/utils/order_converter.py</code> 里添加一个转换器类（如 <code>H2Converter(IsaacLabMuJoCoConverter)</code>），供评估与导出管线使用，接上同样的 DOF 与 body 映射，外加 VR 跟踪与脚部接触的 body 名（<code>VR_3POINTS_BODY_NAMES</code>、<code>FOOT_BODY_NAMES</code>）。用惰性导入（在 <code>__init__</code> 内部）避免循环依赖。</p>
+        <p>body 名兼容性是常见错误来源。训练配置引用了必须存在于你机器人上的特定 body 名——全部核对一遍：</p>
+        <ul>
+          <li><strong>Command 配置</strong>（<code>config/manager_env/commands/terms/motion.yaml</code>）：<code>anchor_body</code>、<code>vr_3point_body</code>、<code>reward_point_body</code>，以及 14 个被跟踪的 <code>body_names</code>。</li>
+          <li><strong>Termination 配置</strong>：<code>ee_body_pos_adaptive.yaml</code>（踝 + 腕连杆）、<code>foot_pos_xyz.yaml</code>（踝连杆）。</li>
+          <li><strong>Reward 配置</strong>：<code>undesired_contacts.yaml</code>（用正则把踝/腕连杆排除出接触惩罚）、<code>anti_shake_ang_vel.yaml</code>（腕连杆 + <code>head_link</code>）。</li>
+        </ul>
+        <p>如果名字不同（H2 在 G1 的 <code>head_link</code> 处是 <code>head_yaw_link</code>），要么在实验配置里覆盖具体字段（推荐），要么把受影响的 term YAML 复制成机器人专属变体。文档里的提示：先用 <code>num_envs=1</code> 跑训练——Isaac Lab 会抛出指名缺失 body 的清晰错误。</p>
+      </section>
+
+      <section id="pkl" class="block">
+        <h2>第 4 步 · 动作数据（PKL 格式）</h2>
+        <p>SONIC 期望重定向后的动作数据是 PKL 文件（joblib 格式）。每个文件是一个以动作名为键的字典：</p>
+        <pre class="code-block"><code>{'{'}
+    "motion_name": {'{'}
+        "root_trans_offset": np.ndarray,  # (T, 3) — root translation
+        "pose_aa": np.ndarray,            # (T, num_bodies, 3) — axis-angle per body
+        "dof": np.ndarray,                # (T, num_dof) — joint positions in MuJoCo order
+        "root_rot": np.ndarray,           # (T, 4) — root quaternion (wxyz)
+        "smpl_joints": np.ndarray,        # (T, 24, 3) — SMPL joint positions (optional)
+        "fps": int,                       # Frame rate (typically 30)
+    {'}'}
+{'}'}</code></pre>
+        <p><strong>重要的数据格式说明：</strong><code>num_bodies</code> 与 <code>num_dof</code> 必须匹配你的机器人（如 H2 的 32 bodies / 31 DOF）；<code>dof</code> 值必须按 <strong>MuJoCo 关节顺序</strong>，不是 IsaacLab 顺序；<code>pose_aa</code> 必须按 <strong>MuJoCo body 顺序</strong>；镜像变体（文件名以 <code>_M.pkl</code> 结尾）让有效数据集翻倍并改善对称性；<code>smpl_joints</code> 供 SMPL 编码器使用——没有 SMPL 数据就填零。动作库从目录递归加载 PKL 文件（<code>data/h2_motions/session_01/…</code>）。</p>
+      </section>
+
+      <section id="retarget" class="block">
+        <h2>第 5 步 · 源动作数据与重定向</h2>
+        <p>推荐来源是 <a href={RELATED.bonesSeed} rel="noopener">Bones-SEED</a>——一个大规模人体动作数据集（142K+ 段动作，约 288 小时），提供原始 BVH 文件（全身人体动捕）与 G1 重定向 CSV（已重定向到 Unitree G1，29 DOF）。新机器人需要把原始人体动作重定向到你的机器人骨骼——这是最耗人工的步骤。细节与下载命令：<a href="/zh/data-collection/">数据采集</a>页与 <a href={OFFICIAL.docs.trainingData} rel="noopener">Training Data</a> 文档。</p>
+        <p>重定向选项：</p>
+        <ol>
+          <li><strong><a href={RELATED.somaRetargeter} rel="noopener">SOMA Retargeter</a></strong>（推荐）——NVIDIA 的 BVH 到类人机器人动作重定向库，基于 Newton 与 NVIDIA Warp 构建。通过 JSON 配置支持任意类人机器人，带一个并排检查源动作与重定向动作的查看器。Bones-SEED 的 G1 重定向数据就是用这个工具生产的。</li>
+          <li><strong><a href="https://github.com/YanjieZe/GMR" rel="noopener">GMR</a></strong>（General Motion Retargeting）——在 CPU 上实时把人体动作重定向到任意类人机器人。支持任意 URDF。更轻量的替代方案。</li>
+          <li><strong>本仓库的数据处理</strong>（<code>gear_sonic/data_process/</code>）——把重定向后的 CSV/BVH 转成 SONIC 期望的 PKL 格式，作为重定向之后的最后一步：
+            <pre class="code-block"><code># Convert retargeted CSVs to motion library PKLs
+python gear_sonic/data_process/convert_soma_csv_to_motion_lib.py \
+    --input /path/to/retargeted_csvs/ \
+    --output data/my_robot_motions/robot \
+    --fps 30 --fps_source 120 --individual --num_workers 16
+
+# Filter out motions that are physically impossible for your robot
+python gear_sonic/data_process/filter_and_copy_bones_data.py \
+    --source data/my_robot_motions/robot \
+    --dest data/my_robot_motions/robot_filtered</code></pre>
+          </li>
+        </ol>
+        <p>SMPL 数据：Bones-SEED 动作的预计算 SMPL 在 <a href="https://huggingface.co/nvidia/GEAR-SONIC" rel="noopener">Hugging Face</a> 上（<code>python download_from_hf.py --training</code>）；自定义动作用 <code>gear_sonic/data_process/extract_soma_joints_from_bvh.py</code> 从 BVH 提取 SMPL 关节；或设 <code>smpl_motion_file: dummy</code>。</p>
+      </section>
+
+      <section id="exp" class="block">
+        <h2>第 6 步 · 实验配置</h2>
+        <p>创建 <code>gear_sonic/config/exp/manager/universal_token/all_modes/sonic_&lt;robot&gt;.yaml</code>——先复制 <code>sonic_release.yaml</code> 再修改。要检查并可能覆盖的字段：</p>
+        <ul>
+          <li><code>robot.type</code> —— 必须与 <code>robot_mapping</code> 里的键一致</li>
+          <li><code>motion_lib_cfg.asset.assetFileName</code> —— 你的 MJCF 文件</li>
+          <li><code>reward_point_body</code> / <code>reward_point_body_offset</code> —— 奖励计算的关键 body</li>
+          <li><code>vr_3point_body</code> / <code>vr_3point_body_offset</code> —— 做 VR 遥操作时</li>
+          <li><code>upper_body_augment_prefixes</code> —— 如果你的动作数据用不同命名，删掉它</li>
+          <li>reward/termination 覆盖里的 body 名 —— 见 body 兼容性一节</li>
+        </ul>
+      </section>
+
+      <section id="train" class="block">
+        <h2>第 7 步 · 训练</h2>
+        <pre class="code-block"><code>python gear_sonic/train_agent_trl.py \
+    +exp=manager/universal_token/all_modes/sonic_h2 \
+    num_envs=16 headless=False \
+    ++manager_env.commands.motion.motion_lib_cfg.motion_file=&lt;path/to/h2_motions&gt;</code></pre>
+        <p>先用 <code>num_envs=16 headless=False</code> 目视确认机器人能加载、动作能正确播放，再放大到 <code>num_envs=4096 headless=True</code> 做完整训练。完整的训练核对清单（映射已验证、按电机组调 KP/KD、镜像变体、SMPL 数据）在官方文档里——完整的 SONIC 训练流程（安装、从 checkpoint 微调、评估）在<a href="/zh/training/">训练页</a>。</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="新 embodiment 常见问题" />
+  </div>
+</Base>

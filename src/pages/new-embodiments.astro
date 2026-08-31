@@ -1,0 +1,219 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, RELATED } from "../data/site.js";
+const faqItems = [
+  { q: "Which files do I touch to train SONIC on a new robot?", a: "Seven items: URDF + meshes under gear_sonic/data/assets/robot_description/urdf/&lt;robot&gt;/, an MJCF at mjcf/&lt;robot&gt;.xml, the robot config gear_sonic/envs/manager_env/robots/&lt;robot&gt;.py, an import in robots/__init__.py, an entry in the robot_mapping dict in modular_tracking_env_cfg.py, a converter class in trl/utils/order_converter.py, and the experiment config sonic_&lt;robot&gt;.yaml. Plus a check pass over body names in the termination, reward, and command YAMLs." },
+  { q: "What is the Isaac Lab ↔ MuJoCo index mapping and why does it matter?", a: "Isaac Lab and MuJoCo traverse the kinematic tree in different orders, so the pipeline needs bidirectional index arrays (isaaclab_to_mujoco_dof, mujoco_to_isaaclab_dof, and the body equivalents). The official docs call getting them right critical: if they are wrong, the policy will receive scrambled observations and produce scrambled actions. Verify by loading a known pose in both simulators and checking joint values after reordering." },
+  { q: "What KP/KD values should I start with for a new robot?", a: "Start from the real motor's armature (rotor inertia) from the datasheet. Natural frequency 10 Hz is a good starting point for humanoids — increase for stiffer/faster tracking, decrease for compliance. The damping ratio should be &gt;= 1.0 (critically damped or overdamped) to avoid oscillation; 2.0 works well for SONIC. Group joints by motor type — hip/knee motors are much stronger than wrist motors." },
+  { q: "Do I need SMPL data to train SONIC on a new robot?", a: "No. The smpl_joints field in the PKL files is used by the SMPL encoder and can be zeros if you have no SMPL data. If you have no SMPL data at all, set smpl_motion_file: dummy in the config — the pipeline generates minimal placeholder SMPL data from the robot motions; it works but produces weaker SMPL encoder performance." },
+];
+const fileChecklist = [
+  ["gear_sonic/data/assets/robot_description/urdf/<robot>/", "Add", "URDF + mesh files for Isaac Lab simulation"],
+  ["gear_sonic/data/assets/robot_description/mjcf/<robot>.xml", "Add", "MuJoCo XML for motion library forward kinematics"],
+  ["gear_sonic/envs/manager_env/robots/<robot>.py", "Add", "Robot config: joints, actuators, mappings, action scales"],
+  ["gear_sonic/envs/manager_env/robots/__init__.py", "Modify", "Import your new robot module"],
+  ["gear_sonic/envs/manager_env/modular_tracking_env_cfg.py", "Modify", "Add robot to robot_mapping dict (~line 998)"],
+  ["gear_sonic/trl/utils/order_converter.py", "Modify", "Add converter class for joint/body reordering"],
+  ["gear_sonic/config/exp/manager/universal_token/all_modes/sonic_<robot>.yaml", "Add", "Experiment config"],
+  ["Config YAMLs (terminations, rewards, commands)", "Check", "Body names must exist on your robot"],
+];
+---
+<Base
+  title="SONIC on a new robot: embodiment porting guide (G1 29 DOF → H2 31 DOF) | MotionBricks.wiki"
+  description="Add a new humanoid embodiment to SONIC: seven files to add or modify, IsaacLab↔MuJoCo index mappings, KP/KD tuning, PKL motion data, retargeting — with the Unitree H2 (31 DOF) as the official example."
+  path="/new-embodiments/"
+  crumbs={[{ label: "New embodiments", href: "/new-embodiments/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Training guide · verbatim from the official docs</p>
+      <h1>SONIC on a new robot: <span style="color:var(--accent)">seven files, one mapping</span></h1>
+      <p class="lede">SONIC's training pipeline is designed around the Unitree G1 (29 DOF) but can be extended to other humanoids. The official guide walks through every file you need to touch, using the Unitree H2 (31 DOF) as the concrete example — everything here is transcribed from the <a href={OFFICIAL.docs.newEmbodiments} rel="noopener">Training on New Embodiments</a> doc.</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="On this page">
+      <p class="tt">On this page</p>
+      <a href="#files">Files to touch</a>
+      <a href="#models">Robot model files</a>
+      <a href="#config">Robot config</a>
+      <a href="#mapping">Index mappings</a>
+      <a href="#kpkd">KP/KD tuning</a>
+      <a href="#action">Action scale</a>
+      <a href="#bodies">Body names</a>
+      <a href="#pkl">PKL motion data</a>
+      <a href="#retarget">Retargeting</a>
+      <a href="#exp">Experiment config</a>
+      <a href="#train">Train</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div>
+      <section id="files" class="block">
+        <h2>Files you need to add or modify</h2>
+        <table>
+          <thead><tr><th>File</th><th>Action</th><th>Purpose</th></tr></thead>
+          <tbody>{fileChecklist.map((f) => <tr><td><code>{f[0]}</code></td><td>{f[1]}</td><td>{f[2]}</td></tr>)}</tbody>
+        </table>
+        <p>The full H2 support ships in the repo as a reference implementation: robot config, URDF + meshes, MJCF, experiment config, H2Converter, and the robot_mapping entry all exist — copy them for your own robot.</p>
+      </section>
+
+      <section id="models" class="block">
+        <h2>Step 1 · Robot model files</h2>
+        <pre class="code-block"><code>gear_sonic/data/assets/robot_description/
+|-- urdf/h2/
+|   |-- h2.urdf
+|   `-- meshes/          # STL/OBJ mesh files
+`-- mjcf/
+    `-- h2.xml           # MuJoCo XML</code></pre>
+        <p>The <strong>URDF</strong> is loaded by Isaac Lab for physics simulation. The <strong>MJCF</strong> is used by the motion library to compute forward kinematics on reference motion data. Both must represent the same robot with consistent joint names and tree structure. Make sure your URDF mesh paths are correct — relative paths like <code>meshes/pelvis.stl</code> work best; if your URDF uses <code>package://</code> paths, update them to match the directory layout.</p>
+      </section>
+
+      <section id="config" class="block">
+        <h2>Step 2 · Robot configuration</h2>
+        <p>Create <code>gear_sonic/envs/manager_env/robots/&lt;robot&gt;.py</code> — the most important file; it defines how your robot integrates with the training pipeline. The articulation config uses Isaac Lab's <code>ArticulationCfg</code> with <code>UrdfFileCfg</code> spawn, <code>init_state</code>, and one <code>ImplicitActuatorCfg</code> group per motor type (legs, arms, waist, feet, etc.). Two init_state notes from the docs:</p>
+        <ul>
+          <li><code>pos</code> z-value is the spawn height — set it so the robot starts standing with feet slightly above ground. Too low = feet clip through ground on first frame.</li>
+          <li><code>joint_pos</code> should be a stable standing pose, from your robot's real default calibration pose or a MuJoCo keyframe.</li>
+        </ul>
+      </section>
+
+      <section id="mapping" class="block">
+        <h2>Joint and body ordering — the critical part</h2>
+        <p>Isaac Lab and MuJoCo traverse the kinematic tree in different orders. You must define bidirectional index mappings. Get these by loading your URDF in Isaac Lab and your MJCF in MuJoCo, printing the joint/body lists, and computing the reorder indices.</p>
+        <pre class="code-block"><code># All bodies in IsaacLab traversal order (including root "pelvis")
+H2_ISAACLAB_JOINTS = [
+    "pelvis",
+    "left_hip_pitch_link",
+    "right_hip_pitch_link",
+    # ... all 32 bodies for H2
+]
+
+# Index arrays: position i in the output = position mapping[i] in the input
+H2_ISAACLAB_TO_MUJOCO_DOF = [...]   # len = num_dof (31 for H2)
+H2_MUJOCO_TO_ISAACLAB_DOF = [...]
+H2_ISAACLAB_TO_MUJOCO_BODY = [...]  # len = num_bodies (32 for H2)
+H2_MUJOCO_TO_ISAACLAB_BODY = [...]
+
+H2_ISAACLAB_TO_MUJOCO_MAPPING = {'{'}
+    "isaaclab_joints": H2_ISAACLAB_JOINTS,
+    "isaaclab_to_mujoco_dof": H2_ISAACLAB_TO_MUJOCO_DOF,
+    "mujoco_to_isaaclab_dof": H2_MUJOCO_TO_ISAACLAB_DOF,
+    "isaaclab_to_mujoco_body": H2_ISAACLAB_TO_MUJOCO_BODY,
+    "mujoco_to_isaaclab_body": H2_MUJOCO_TO_ISAACLAB_BODY,
+{'}'}</code></pre>
+        <div class="warn"><strong>Getting the mappings right is critical.</strong> If they are wrong, the policy will receive scrambled observations and produce scrambled actions. Verify by loading a known pose in both simulators and checking that joint values match after reordering.</div>
+      </section>
+
+      <section id="kpkd" class="block">
+        <h2>Actuator parameters (KP/KD tuning)</h2>
+        <p>The actuator stiffness (KP) and damping (KD) are critical for sim-to-real transfer and training stability. SONIC uses implicit PD actuators in Isaac Lab.</p>
+        <pre class="code-block"><code># Derive from motor specs — these need tuning for your robot
+NATURAL_FREQ = 10 * 2.0 * 3.1415926535  # 10Hz natural frequency
+DAMPING_RATIO = 2.0                      # Overdamped for stability
+
+# Per-motor stiffness: KP = armature * omega^2
+STIFFNESS_5020 = ARMATURE_5020 * NATURAL_FREQ**2
+# Per-motor damping: KD = 2 * zeta * armature * omega
+DAMPING_5020 = 2.0 * DAMPING_RATIO * ARMATURE_5020 * NATURAL_FREQ</code></pre>
+        <p>Tuning guidance (verbatim):</p>
+        <ul>
+          <li>Start with the real motor's <strong>armature</strong> (rotor inertia) from the datasheet.</li>
+          <li>The <strong>natural frequency</strong> controls responsiveness. 10 Hz is a good starting point for humanoids. Increase for stiffer/faster tracking, decrease for compliance.</li>
+          <li>The <strong>damping ratio</strong> should be &gt;= 1.0 (critically damped or overdamped) to avoid oscillation. 2.0 works well for SONIC.</li>
+          <li><strong>Different joint groups need different gains.</strong> Hip/knee motors are much stronger than wrist motors. Group joints by motor type (see G1/H2 configs for examples).</li>
+          <li>If training is unstable (robot explodes or falls immediately), your KP/KD values are likely wrong — try reducing KP or increasing KD.</li>
+          <li>The <strong>effort limits</strong> (max torque) per joint should match the real motor specs.</li>
+        </ul>
+      </section>
+
+      <section id="action" class="block">
+        <h2>Action scale</h2>
+        <p>Action scale maps normalized policy outputs to joint position targets. Compute it from effort limit and stiffness:</p>
+        <pre class="code-block"><code>{'{'}
+H2_ACTION_SCALE = {'}'}
+for joint_name in joint_names:
+    H2_ACTION_SCALE[joint_name] = effort_limit[joint_name] / stiffness[joint_name]</code></pre>
+        <p>Larger action scale = larger joint movements per policy output. If the robot moves too aggressively, reduce the action scale. Then register the module in <code>robots/__init__.py</code> and add the robot to the <code>robot_mapping</code> dict in <code>modular_tracking_env_cfg.py</code> (around line 998); the string key (e.g. <code>"h2"</code>) is what you use as <code>robot.type</code> in the experiment config.</p>
+      </section>
+
+      <section id="bodies" class="block">
+        <h2>Step 3 · Order converter + body name compatibility</h2>
+        <p>In <code>gear_sonic/trl/utils/order_converter.py</code>, add a converter class (e.g. <code>H2Converter(IsaacLabMuJoCoConverter)</code>) used by the evaluation and export pipeline, wiring the same DOF and body mappings plus the VR tracking and foot contact body names (<code>VR_3POINTS_BODY_NAMES</code>, <code>FOOT_BODY_NAMES</code>). Use lazy imports (inside <code>__init__</code>) to avoid circular dependencies.</p>
+        <p>Body name compatibility is a common source of errors. The training configs reference specific body names that must exist on your robot — check all of them:</p>
+        <ul>
+          <li><strong>Command config</strong> (<code>config/manager_env/commands/terms/motion.yaml</code>): <code>anchor_body</code>, <code>vr_3point_body</code>, <code>reward_point_body</code>, and the 14 tracked <code>body_names</code>.</li>
+          <li><strong>Termination configs</strong>: <code>ee_body_pos_adaptive.yaml</code> (ankle + wrist links), <code>foot_pos_xyz.yaml</code> (ankle links).</li>
+          <li><strong>Reward configs</strong>: <code>undesired_contacts.yaml</code> (regex excluding ankle/wrist links from contact penalty), <code>anti_shake_ang_vel.yaml</code> (wrist links + <code>head_link</code>).</li>
+        </ul>
+        <p>If names differ (H2 has <code>head_yaw_link</code> where G1 has <code>head_link</code>), either override the specific fields in your experiment config (recommended) or copy the affected term YAMLs into robot-specific variants. Tip from the docs: run training with <code>num_envs=1</code> first — Isaac Lab raises a clear error naming the missing body.</p>
+      </section>
+
+      <section id="pkl" class="block">
+        <h2>Step 4 · Motion data (PKL format)</h2>
+        <p>SONIC expects retargeted motion data as PKL files (joblib format). Each file contains a dict keyed by motion name:</p>
+        <pre class="code-block"><code>{'{'}
+    "motion_name": {'{'}
+        "root_trans_offset": np.ndarray,  # (T, 3) — root translation
+        "pose_aa": np.ndarray,            # (T, num_bodies, 3) — axis-angle per body
+        "dof": np.ndarray,                # (T, num_dof) — joint positions in MuJoCo order
+        "root_rot": np.ndarray,           # (T, 4) — root quaternion (wxyz)
+        "smpl_joints": np.ndarray,        # (T, 24, 3) — SMPL joint positions (optional)
+        "fps": int,                       # Frame rate (typically 30)
+    {'}'}
+{'}'}</code></pre>
+        <p><strong>Important data format notes:</strong> <code>num_bodies</code> and <code>num_dof</code> must match your robot (e.g. 32 bodies / 31 DOF for H2); <code>dof</code> values must be in <strong>MuJoCo joint order</strong>, not IsaacLab order; <code>pose_aa</code> must be in <strong>MuJoCo body order</strong>; mirrored variants (filename ending in <code>_M.pkl</code>) double your effective dataset size and improve symmetry; <code>smpl_joints</code> is used by the SMPL encoder — set it to zeros if you don't have SMPL data. The motion library loads PKL files recursively from a directory (<code>data/h2_motions/session_01/…</code>).</p>
+      </section>
+
+      <section id="retarget" class="block">
+        <h2>Step 5 · Source motion data and retargeting</h2>
+        <p>The recommended source is <a href={RELATED.bonesSeed} rel="noopener">Bones-SEED</a> — a large-scale human motion dataset (142K+ motions, ~288 hours) providing raw BVH files (full-body human motion capture) and G1 retargeted CSVs (already retargeted to the Unitree G1, 29 DOF). For a new robot you need to retarget the raw human motions to your robot's skeleton — the most labor-intensive step. Details and the download commands: <a href="/data-collection/">data collection</a> page and the <a href={OFFICIAL.docs.trainingData} rel="noopener">Training Data</a> doc.</p>
+        <p>Retargeting options:</p>
+        <ol>
+          <li><strong><a href={RELATED.somaRetargeter} rel="noopener">SOMA Retargeter</a></strong> (recommended) — NVIDIA's BVH-to-humanoid motion retargeting library built with Newton and NVIDIA Warp. Supports any humanoid robot via JSON configuration, includes a viewer for inspecting source and retargeted motions side by side. This is the same tool used to produce the Bones-SEED G1 retargeted data.</li>
+          <li><strong><a href="https://github.com/YanjieZe/GMR" rel="noopener">GMR</a></strong> (General Motion Retargeting) — retargets human motions to arbitrary humanoid robots in real time on CPU. Supports any URDF. A lighter-weight alternative.</li>
+          <li><strong>This repo's data processing</strong> (<code>gear_sonic/data_process/</code>) — converts retargeted CSVs/BVHs into the PKL format SONIC expects, as the final step after retargeting:
+            <pre class="code-block"><code># Convert retargeted CSVs to motion library PKLs
+python gear_sonic/data_process/convert_soma_csv_to_motion_lib.py \
+    --input /path/to/retargeted_csvs/ \
+    --output data/my_robot_motions/robot \
+    --fps 30 --fps_source 120 --individual --num_workers 16
+
+# Filter out motions that are physically impossible for your robot
+python gear_sonic/data_process/filter_and_copy_bones_data.py \
+    --source data/my_robot_motions/robot \
+    --dest data/my_robot_motions/robot_filtered</code></pre>
+          </li>
+        </ol>
+        <p>For SMPL data: pre-computed SMPL for Bones-SEED motions is on <a href="https://huggingface.co/nvidia/GEAR-SONIC" rel="noopener">Hugging Face</a> (<code>python download_from_hf.py --training</code>); for custom motions extract SMPL joints from BVH with <code>gear_sonic/data_process/extract_soma_joints_from_bvh.py</code>; or set <code>smpl_motion_file: dummy</code>.</p>
+      </section>
+
+      <section id="exp" class="block">
+        <h2>Step 6 · Experiment config</h2>
+        <p>Create <code>gear_sonic/config/exp/manager/universal_token/all_modes/sonic_&lt;robot&gt;.yaml</code> — start by copying <code>sonic_release.yaml</code> and modify. Fields to review and potentially override:</p>
+        <ul>
+          <li><code>robot.type</code> — must match the key in <code>robot_mapping</code></li>
+          <li><code>motion_lib_cfg.asset.assetFileName</code> — your MJCF file</li>
+          <li><code>reward_point_body</code> / <code>reward_point_body_offset</code> — key bodies for reward computation</li>
+          <li><code>vr_3point_body</code> / <code>vr_3point_body_offset</code> — if doing VR teleoperation</li>
+          <li><code>upper_body_augment_prefixes</code> — remove if your motion data uses different naming</li>
+          <li>Body names in reward/termination overrides — see the body compatibility section</li>
+        </ul>
+      </section>
+
+      <section id="train" class="block">
+        <h2>Step 7 · Train</h2>
+        <pre class="code-block"><code>python gear_sonic/train_agent_trl.py \
+    +exp=manager/universal_token/all_modes/sonic_h2 \
+    num_envs=16 headless=False \
+    ++manager_env.commands.motion.motion_lib_cfg.motion_file=&lt;path/to/h2_motions&gt;</code></pre>
+        <p>Start with <code>num_envs=16 headless=False</code> to visually verify the robot loads and motions play correctly, then scale up to <code>num_envs=4096 headless=True</code> for full training. A full training checklist (mappings verified, KP/KD per motor group, mirrored variants, SMPL data) is in the official doc — the full SONIC training flow (installation, finetune from checkpoint, evaluation) is on the <a href="/training/">training page</a>.</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="New embodiments FAQ" />
+  </div>
+</Base>

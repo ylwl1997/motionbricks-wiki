@@ -1,0 +1,97 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL, RELATED } from "../../data/site.js";
+const faqItems = [
+  { q: "MotionBricks 和 SONIC 是同一个东西吗？", a: "不是。SONIC（以 GEAR-SONIC 发布）是一个基于跟踪的全身控制器：它接收参考动作（SMPL 姿态、G1 动作或遥操作输入），以 50 Hz 在机器人上跟踪执行。MotionBricks 是一个实时生成模型，从潜在 token 与文本-风格原语合成动作。README 的 Related Work 明确说二者互补：GEAR-SONIC 与 MotionBricks 共同构成 NVIDIA GR00T Whole-Body Control 计划的基石。" },
+  { q: "该用哪个——MotionBricks 还是 SONIC？", a: "取决于问题。如果需要一个机器人跟随参考动作、跟踪遥操作员或执行 VLA 策略，用 SONIC 控制器。如果需要生成或创作新动作——风格化移动、过渡、物体交互——而没有录好的参考，那是 MotionBricks 的地盘。它们不是替代品；它们解决动作问题的两个不同半场。" },
+  { q: "Kimodo 和 MotionBricks 是同一个东西吗？", a: "不是。官方 README 把 Kimodo 称为专注于离线动作生成的兄弟项目，与 MotionBricks 的实时运行时互补。Kimodo 离线做 text-to-motion；MotionBricks 实时合成动作（15,000 FPS，约 2 ms 延迟）。Kimodo 由 Sibling Lab 开发，发布在独立仓库（nv-tlabs/kimodo）里。" },
+  { q: "可以把 MotionBricks 的输出当作 SONIC 的输入吗？", a: "这正是 README 指出的方向：MotionBricks 的完整发布——一个完全嵌入 GR00T whole-body control 机器人学表述的模型——目标大约在一个月后。当前预览发布包含交互式演示、checkpoint 与训练代码；跟踪侧是 SONIC，本站的页面都在讲它。" },
+];
+const whichTable = [
+  ["SONIC（GEAR-SONIC）", "基于跟踪的全身控制", "已有参考动作：SMPL 姿态、G1 动作文件、遥操作或 VLA 执行", "以 50 Hz 跟踪参考；64 维潜在动作 token；TensorRT C++ 部署"],
+  ["MotionBricks", "生成式实时动作合成", "没有参考：创作新的移动、风格、过渡、物体交互", "15,000 FPS / 约 2 ms 延迟；smart primitives + 潜在骨干；零样本合成"],
+  ["Kimodo", "离线动作生成（兄弟项目）", "文本提示 → 预渲染的动作片段，提前生成", "Text-to-motion，离线；与 MotionBricks 的实时运行时互补"],
+];
+---
+<Base
+  title="SONIC vs MotionBricks vs Kimodo：跟踪、生成与离线 | MotionBricks.wiki"
+  description="GEAR-SONIC（跟踪）vs MotionBricks（生成式，15,000 FPS）vs Kimodo（离线兄弟项目）：在 NVIDIA GR00T WBC 计划里如何互补——官方 README 的表述。"
+  path="/sonic-vs-motionbricks/"
+  lang="zh"
+  crumbs={[{ label: "SONIC vs MotionBricks", href: "/zh/sonic-vs-motionbricks/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">对比 · 官方 README 的表述</p>
+      <h1>SONIC vs MotionBricks：<span style="color:var(--accent)">跟踪与生成，不是对手</span></h1>
+      <p class="lede">两个项目发布在同一个仓库里，README 明确说了它们的关系：MotionBricks 是一个实时生成框架，以 15,000 FPS 提供高质量、零样本的动作合成——<strong>与本仓库中基于跟踪的 GEAR-SONIC 控制器互补</strong>。本页照录这段表述，并帮你选对工具。来源：<a href={OFFICIAL.parentRepo} rel="noopener">GR00T-WholeBodyControl README</a> 与 <a href={OFFICIAL.repo} rel="noopener">MotionBricks README</a>。</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="本页目录">
+      <p class="tt">本页目录</p>
+      <a href="#roles">三个角色</a>
+      <a href="#comparison">并排对比</a>
+      <a href="#sonic">SONIC：跟踪</a>
+      <a href="#motionbricks">MotionBricks：生成</a>
+      <a href="#kimodo">Kimodo：离线</a>
+      <a href="#choose">该用哪个</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+
+    <div>
+      <section id="roles" class="block">
+        <h2>一个技术栈里的三个角色</h2>
+        <p>NVIDIA 的 GR00T Whole-Body Control（WBC）不是单一模型——它是一个技术栈。父仓库 README 这样定位各个部件：</p>
+        <ul>
+          <li><strong>SONIC</strong> —— 让机器人动起来的控制器。基于跟踪：它消费参考（SMPL 姿态、G1 动作、遥操作）并产生全身电机指令。</li>
+          <li><strong>MotionBricks</strong> —— 发明参考的生成器。面向动画与机器人学实时交互控制的实时潜在生成模型。</li>
+          <li><strong>Kimodo</strong> —— 一个离线 text-to-motion 兄弟项目，在你需要动作之前就生成好、而不是实时生成时很有用。</li>
+        </ul>
+        <div class="note">官方 README（Related Work）：<em>"Together with MotionBricks, GEAR-SONIC anchors NVIDIA's GR00T Whole-Body Control initiative."</em>（与 MotionBricks 一起，GEAR-SONIC 奠定了 NVIDIA 的 GR00T Whole-Body Control 计划。）兄弟项目则写着：<em>"Kimodo — A sibling project focused on offline motion generation, complementary to MotionBricks' real-time runtime."</em>（Kimodo——一个专注于离线动作生成、与 MotionBricks 实时运行时互补的兄弟项目。）两句话都是逐字照抄。</div>
+      </section>
+
+      <section id="comparison" class="block">
+        <h2>并排对比</h2>
+        <table>
+          <thead><tr><th>项目</th><th>是什么</th><th>何时用</th><th>数字（官方）</th></tr></thead>
+          <tbody>{whichTable.map((r) => <tr><td><strong>{r[0]}</strong></td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td></tr>)}</tbody>
+        </table>
+      </section>
+
+      <section id="sonic" class="block">
+        <h2>SONIC：基于跟踪的控制器</h2>
+        <p>SONIC 是一个类人行为基础模型，从大规模人体动作数据中给机器人一组核心运动技能。它不是为预定义动作构建独立控制器，而是把动作跟踪当作一个可扩展的训练任务，让一个统一策略产生自然的全身动作——从行走、爬行到遥操作与多模态控制。它泛化到训练之外见过的动作，并作为更高层规划与交互的基础。</p>
+        <p>实际后果：SONIC 需要参考来跟踪。参考可以来自 SMPL 姿态流（遥操作）、G1 动作文件或规划器。部署是 C++ + TensorRT；控制器以 50 Hz 运行，带 64 维潜在动作 token。三个已发布的 G1 checkpoint（Default、Low-latency、v1.1）与怎么选：<a href="/zh/sonic-models/">SONIC 模型页</a>。部署步骤：<a href="/zh/installation-deploy/">安装与部署</a>。</p>
+      </section>
+
+      <section id="motionbricks" class="block">
+        <h2>MotionBricks：实时生成器</h2>
+        <p>MotionBricks 是一个实时生成框架，为动画与机器人学变革交互式动作控制。它把大规模潜在骨干与直观的 "smart primitives" 结合，以 15,000 FPS 提供高质量、零样本的动作合成，让用户像搭积木一样构建复杂动画与机器人动作。它不是控制器：它产生动作，不产生电机指令。</p>
+        <p>三个模型组件——VQVAE（动作分词器）、pose 模型、root 模型——在 BONES-SEED 语料（142,220 段重定向到 G1 的轨迹，约 288 小时）上训练。交互式 G1 演示是 MuJoCo 查看器里键盘驱动；checkpoint 是选择加入的 Git LFS 下载。全貌见<a href="/zh/architecture/">架构</a>、<a href="/zh/motion-representation/">动作表示</a>与<a href="/zh/setup/">安装</a>。训练脚本默认用<strong>合成数据</strong>，这样可以在没有真实数据集的情况下端到端验证管线。</p>
+      </section>
+
+      <section id="kimodo" class="block">
+        <h2>Kimodo：离线的兄弟项目</h2>
+        <p>官方 README 原话：<em>"Kimodo — A sibling project focused on offline motion generation, complementary to MotionBricks' real-time runtime."</em>（Kimodo——一个专注于离线动作生成、与 MotionBricks 实时运行时互补的兄弟项目。）Kimodo 离线、在运行时之前生成 text-to-motion；它是 <a href={RELATED.sonicPage} rel="noopener">SONIC 网页演示</a>里 text-to-motion 功能的幕后项目。它住在独立仓库（<a href={RELATED.kimodoRepo} rel="noopener">nv-tlabs/kimodo</a>）里，有独立的项目页（<a href={RELATED.kimodoPage} rel="noopener">research.nvidia.com</a>）。"Sibling"（兄弟）意味着相关但独立：同一家族，不同的运行时画像——离线 vs 实时。</p>
+      </section>
+
+      <section id="choose" class="block">
+        <h2>你实际需要哪一个？</h2>
+        <ul>
+          <li><strong>你有要跟随的参考</strong>（遥操作流、动作文件、VLA 策略输出）且需要机器人执行它 → <strong>SONIC</strong>。从<a href="/zh/installation-deploy/">安装与部署</a>开始。</li>
+          <li><strong>你想创作或生成动作</strong>（风格化移动、过渡、交互）且没有录好的参考 → <strong>MotionBricks</strong>。从<a href="/zh/setup/">安装</a>与<a href="/zh/g1-demo/">G1 演示</a>开始。</li>
+          <li><strong>你想要提前生成的 text-to-motion</strong>，然后回放 → <strong>Kimodo</strong>（离线），或者用 MotionBricks 保持实时生成。</li>
+          <li><strong>你在采集数据或搭建 VLA 管线</strong>——那是 SONIC + 遥操作栈：<a href="/zh/data-collection/">数据采集</a> → <a href="/zh/vla-workflow/">VLA 全流程</a>。</li>
+        </ul>
+        <p>再说一句来自文档的现实检验：MotionBricks 的完整发布——一个完全嵌入 GR00T whole-body control 机器人学表述、带完整训练管线的模型——目标大约在一个月后。预览发布提供演示、checkpoint 与训练代码；技术栈的跟踪侧已经生产可用，本站的页面都有文档。</p>
+        <div class="note">有一条本站不重复的说法：社区流传的 MotionBricks "5,000 FPS" 数字是错的——官方项目页与 README 都写 15,000 FPS。更正见<a href="/zh/gr00t-sonic/">GR00T/SONIC 总览</a>。</div>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="SONIC vs MotionBricks 常见问题" />
+  </div>
+</Base>

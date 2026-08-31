@@ -1,0 +1,106 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL } from "../../data/site.js";
+const faqItems = [
+  { q: "该用哪个 SONIC 模型？", a: "通用动作跟踪、规划、遥操作与现有部署兼容用 Default SONIC。要响应最快的全身遥操作与 VLA 执行，用 Low-latency teleoperation（4 帧，约 80 ms lookahead）。需要航向稳定的全身遥操作或基于 SONIC 的 VLA 策略时，用 SONIC v1.1（10 帧，约 200 ms lookahead，机器人航向归一化，带腕部姿态增强）。" },
+  { q: "三个 SONIC checkpoint 有什么区别？", a: "区别在参考视野（reference horizon）与部署意图：Default 用 20 ms 间隔的 10 帧未来参考（约 200 ms lookahead，step5 观测），Low-latency 用 4 帧（约 80 ms，step1），v1.1 用 10 帧（约 200 ms），并带机器人航向归一化目标朝向与腕部姿态增强。" },
+  { q: "lookahead 就是延迟吗？", a: "不是。lookahead 值描述的是呈现给控制器的参考视野，不是端到端遥操作总延迟的测量值——后者还包括感知、网络、预处理与推理。这是官方模型卡的原话。" },
+  { q: "SONIC checkpoint 托管在哪里？", a: "Hugging Face 的 nvidia/GEAR-SONIC 仓库。Default SONIC 的文件在顶层（model_encoder.onnx、model_decoder.onnx、observation_config.yaml、训练 checkpoint sonic_release/last.pt）；低延迟在 low_latency/ 下，v1.1 在 sonic_v1_1/ 下。用仓库里的 python download_from_hf.py 下载。" },
+];
+const sonicModels = [
+  {
+    name: "Default SONIC（原始发布）",
+    lookahead: "10 帧未来参考，20 ms 间隔，约 200 ms 参考 lookahead",
+    use: "通用全身控制控制器，用于动作跟踪、规划、遥操作与现有部署的兼容。G1 与遥操作的 future-reference 观测使用 step5。",
+    link: "https://huggingface.co/nvidia/GEAR-SONIC",
+    linkLabel: "nvidia/GEAR-SONIC · main",
+  },
+  {
+    name: "Low-latency teleoperation",
+    lookahead: "4 帧未来参考，20 ms 间隔，约 80 ms 参考 lookahead",
+    use: "面向响应更快的全身遥操作与 VLA 执行。G1 与遥操作的 future-reference 观测使用 step1。编码器、解码器与观测配置必须配套使用。",
+    link: "https://huggingface.co/nvidia/GEAR-SONIC/tree/main/low_latency",
+    linkLabel: "nvidia/GEAR-SONIC · low_latency",
+  },
+  {
+    name: "SONIC v1.1",
+    lookahead: "10 帧未来参考，20 ms 间隔，约 200 ms 参考 lookahead",
+    use: "使用机器人航向归一化的目标朝向，训练时带腕部姿态增强。面向航向稳定的全身遥操作与使用该控制器的 SONIC 版 VLA 策略。G1 与遥操作的 future-reference 观测使用 step5；这不是低延迟模型。",
+    link: "https://huggingface.co/nvidia/GEAR-SONIC/tree/main/sonic_v1_1",
+    linkLabel: "nvidia/GEAR-SONIC · sonic_v1_1",
+  },
+];
+const commonNote = "三个模型共用 SONIC 通用 token 控制器，输出 64 维潜在动作 token，控制器以 50 Hz 运行，支持 SMPL 姿态、G1 动作参考与遥操作输入。";
+const caveatNote = "lookahead 值描述的是呈现给控制器的参考视野（reference horizon）。它们不是端到端遥操作总延迟的测量值——后者还包括感知、网络、预处理与推理。这是官方模型卡的原话。";
+const releaseFiles = [
+  { model: "Default SONIC", deploy: "model_encoder.onnx, model_decoder.onnx, observation_config.yaml", pt: "sonic_release/last.pt, sonic_release/config.yaml" },
+  { model: "Low-latency teleoperation", deploy: "low_latency/model_encoder.onnx, low_latency/model_decoder.onnx, low_latency/observation_config.yaml", pt: "low_latency/last.pt, low_latency/config.yaml, low_latency/model_config.yaml" },
+  { model: "SONIC v1.1", deploy: "sonic_v1_1/model_encoder.onnx, sonic_v1_1/model_decoder.onnx, sonic_v1_1/observation_config.yaml", pt: "sonic_v1_1/last.pt, sonic_v1_1/config.yaml, sonic_v1_1/model_config.yaml" },
+];
+---
+<Base
+  title="SONIC 模型选型：Default / Low-latency / v1.1 对比 | MotionBricks.wiki"
+  description="三个 GEAR-SONIC checkpoint（Default / Low-latency / SONIC v1.1）对比：SMPL 参考帧、lookahead 约 200ms vs 约 80ms、用途、发布文件与 Hugging Face 位置——全部来自官方模型卡。"
+  path="/sonic-models/"
+  lang="zh"
+  crumbs={[{ label: "SONIC 模型选型", href: "/zh/sonic-models/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">选型指南 · 来自官方模型卡</p>
+      <h1>你需要哪个 SONIC 模型？<span style="color:var(--accent)">三个 checkpoint，一个决定</span></h1>
+      <p class="lede">GEAR-SONIC 为 Unitree G1 发布了三个全身控制器 checkpoint。区别在参考视野与部署意图——按你打算怎么用控制器来选，而不是按版本号。下面所有内容逐字摘自<a href={OFFICIAL.docs.modelCard} rel="noopener">官方模型卡</a>。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>可用的模型</h2>
+    <table>
+      <thead><tr><th>模型</th><th>SMPL 参考输入</th><th>用途</th></tr></thead>
+      <tbody>
+        {sonicModels.map((m) => (
+          <tr>
+            <td><strong>{m.name}</strong></td>
+            <td>{m.lookahead}</td>
+            <td>{m.use} <a href={m.link} rel="noopener">HF 文件 →</a></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <div class="note"><strong>三者共用同一个控制器核心：</strong> {commonNote}</div>
+    <div class="warn"><strong>跑基准前先读：</strong> {caveatNote}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>按使用场景选</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Default SONIC</h3>
+        <p>动作跟踪、规划、遥操作与现有部署兼容。拿不准时的安全默认——它就是最初的通用发布版。</p>
+      </div>
+      <div class="card">
+        <h3>Low-latency teleoperation</h3>
+        <p>响应最快的全身遥操作与 VLA 执行。4 帧 lookahead（约 80 ms）。编码器、解码器与观测配置要配套使用——别和默认文件混搭。</p>
+      </div>
+      <div class="card">
+        <h3>SONIC v1.1</h3>
+        <p>航向稳定的全身遥操作与基于 SONIC 的 VLA 策略。机器人航向归一化目标朝向，带腕部姿态增强训练。不是低延迟模型。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>发布文件</h2>
+    <table>
+      <thead><tr><th>模型</th><th>部署文件</th><th>PyTorch + 配置</th></tr></thead>
+      <tbody>
+        {releaseFiles.map((r) => <tr><td><strong>{r.model}</strong></td><td><code>{r.deploy}</code></td><td><code>{r.pt}</code></td></tr>)}
+      </tbody>
+    </table>
+    <p>部署使用 C++ 与 TensorRT；PyTorch checkpoint 支持 Isaac Lab 评估与继续训练。模型权重受 <a href="https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/LICENSE" rel="noopener">NVIDIA Open Model License</a> 约束。</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="SONIC 模型常见问题" />
+  </div>
+</Base>

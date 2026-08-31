@@ -13,6 +13,26 @@ export const OFFICIAL = {
   motionReprDocs: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/motionbricks/docs/motion_representation.md",
   customDatasetDocs: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/motionbricks/docs/adding_your_own_dataset.md",
   contact: "gear-wbc@nvidia.com",
+  // GR00T-WBC docs tree (P0/P1 sources)
+  docs: {
+    modelCard: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/model_card.md",
+    vlaWorkflow: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/tutorials/vla_workflow.md",
+    vlaInference: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/tutorials/vla_inference.md",
+    dataCollection: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/tutorials/data_collection.md",
+    troubleshooting: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/user_guide/troubleshooting.md",
+    newEmbodiments: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/user_guide/new_embodiments.md",
+    teleoperation: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/user_guide/teleoperation.md",
+    installationDeploy: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/getting_started/installation_deploy.md",
+    deploymentCode: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/references/deployment_code.md",
+    jetpack6: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/references/jetpack6.md",
+    plannerOnnx: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/references/planner_onnx.md",
+    quickstart: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/getting_started/quickstart.md",
+    vrTeleopSetup: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/getting_started/vr_teleop_setup.md",
+    downloadModels: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/getting_started/download_models.md",
+    trainingData: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/user_guide/training_data.md",
+    training: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/user_guide/training.md",
+    observationConfig: "https://github.com/NVlabs/GR00T-WholeBodyControl/blob/main/docs/source/references/observation_config.md",
+  },
 };
 
 export const RELATED = {

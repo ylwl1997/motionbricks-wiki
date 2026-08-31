@@ -1,0 +1,57 @@
+---
+import Base from "../layouts/Base.astro";
+import { OFFICIAL, RELATED, NEWS_TIMELINE } from "../data/site.js";
+---
+<Base
+  title="GR00T Whole-Body Control overview — the full stack map | MotionBricks.wiki"
+  description="What NVIDIA GR00T Whole-Body Control (GR00T WBC) actually is: the Decoupled WBC, GEAR-SONIC and MotionBricks pillars, the N1.5/N1.6 lineage, the release timeline, and where MotionBricks sits in the repo."
+  path="/gr00t-overview/"
+  crumbs={[{ label: "GR00T overview", href: "/gr00t-overview/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Landscape guide · from the README</p>
+      <h1>GR00T Whole-Body Control: <span style="color:var(--accent)">the full stack, mapped</span></h1>
+      <p class="lede">MotionBricks is one layer of a bigger effort. This page maps the whole GR00T Whole-Body Control (WBC) codebase — the three pillars, the N-series controllers, and the release timeline — so you can find the layer you actually need.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>What GR00T WBC is</h2>
+    <p><a href={OFFICIAL.parentRepo} rel="noopener">GR00T Whole-Body Control</a> is NVIDIA's codebase for whole-body controllers of humanoid robots. It hosts model checkpoints and scripts for training, evaluating, and deploying advanced whole-body controllers, and currently supports three things:</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Decoupled WBC</h3>
+        <p>The decoupled controller — RL for the lower body, IK for the upper body — used in NVIDIA GR00T <a href="https://research.nvidia.com/labs/gear/gr00t-n1_5/" rel="noopener">N1.5</a> and <a href="https://research.nvidia.com/labs/gear/gr00t-n1_6/" rel="noopener">N1.6</a> models.</p>
+      </div>
+      <div class="card">
+        <h3>GEAR-SONIC</h3>
+        <p>The latest generation of generalist humanoid whole-body controllers. See the <a href={RELATED.sonicPage} rel="noopener">whitepaper</a>.</p>
+      </div>
+      <div class="card">
+        <h3>MotionBricks</h3>
+        <p>A real-time latent generative model for interactive motion control in animation and robotics — the <a href={OFFICIAL.projectPage} rel="noopener">project page</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Release timeline</h2>
+    <table>
+      <thead><tr><th>Date</th><th>What shipped</th></tr></thead>
+      <tbody>
+        {NEWS_TIMELINE.map(([d, t]) => <tr><td><code>{d}</code></td><td>{t}</td></tr>)}
+      </tbody>
+    </table>
+    <p style="color:var(--ink-2);font-size:13.5px">Wording per the official README News section. The MotionBricks full release (complete training pipeline embedded in the GR00T WBC robotics formulation) is tracked in that same roadmap — targeted approximately one month out from the 2026-04-27 preview.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Repository map</h2>
+    <p>The monorepo <code>NVlabs/GR00T-WholeBodyControl</code> is where the pieces live. MotionBricks ships as a subproject (<code>motionbricks/</code>); the SONIC controllers, training, and C++ deployment live under <code>gear_sonic/</code>; docs under <code>docs/source/</code>. The <a href="/sonic-models/">SONIC model selector</a>, <a href="/vla-workflow/">VLA workflow</a>, and <a href="/motion-representation/">motion representation</a> pages each dive into one slice.</p>
+    <div class="grid">
+      <div class="card"><h3><a href="/sonic-models/">SONIC models</a></h3><p>Default vs Low-latency vs v1.1 — which checkpoint, and the lookahead caveat.</p></div>
+      <div class="card"><h3><a href="/vla-workflow/">VLA workflow</a></h3><p>Collect → fine-tune Isaac-GR00T N1.7 → deploy with SONIC.</p></div>
+      <div class="card"><h3><a href="/teleoperation/">Teleoperation</a></h3><p>VR, keyboard, gamepad, live camera — and ZMQ streaming.</p></div>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,79 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL } from "../../data/site.js";
+const faqItems = [
+  { q: "SONIC 技术栈里的 VLA 工作流是什么？", a: "它是让机器人按语言指令行动的完整管线，共三步：1) 用 VR 全身遥操作采集遥操作演示，2) 在这份数据上微调 Isaac-GR00T N1.7 基础模型，3) 把微调后的策略部署到 SONIC 控制器上做自主推理。" },
+  { q: "VLA 推理栈由哪些部分组成？", a: "四个协同部件：Isaac-GR00T PolicyServer（通过 ZMQ 提供动作服务，运行在 GPU 机器上）、VLA 推理客户端（读取摄像头与机器人状态、查询服务器、发布动作）、C++ 部署二进制（执行全身控制），以及摄像头服务器（通过 ZMQ 发布图像，作为 systemd 服务运行在机器人上）。" },
+  { q: "VLA 应该用哪个 SONIC checkpoint？", a: "当你的 VLA 策略是按机器人航向归一化的 SONIC 控制器训练时，用 sonic_v1_1 checkpoint（它用 10 帧 SMPL/腕部参考视野并带腕部姿态增强，不是低延迟 checkpoint）。追求响应最快的遥操作时，低延迟 checkpoint 配对应的观测配置使用。" },
+];
+---
+<Base
+  title="VLA 全流程：采集、微调 Isaac-GR00T N1.7、用 SONIC 部署 | MotionBricks.wiki"
+  description="GR00T 技术栈上的端到端视觉-语言-动作工作流：VR 遥操作数据采集、微调 Isaac-GR00T N1.7、用 SONIC 全身控制部署策略——命令逐字来自官方教程。"
+  path="/vla-workflow/"
+  lang="zh"
+  crumbs={[{ label: "VLA 全流程", href: "/zh/vla-workflow/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">管线指南 · 命令逐字照录</p>
+      <h1>VLA 全流程：<span style="color:var(--accent)">采集、微调、部署</span></h1>
+      <p class="lede">视觉-语言-动作（VLA）策略让机器人能跟随语言提示行动。官方管线分三步——遥操作数据采集、Isaac-GR00T N1.7 微调、SONIC 部署。下面所有命令抄自<a href={OFFICIAL.docs.vlaWorkflow} rel="noopener">VLA Workflow</a>与<a href={OFFICIAL.docs.vlaInference} rel="noopener">VLA Inference</a>教程。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>第 1 步 · 采集遥操作演示</h2>
+    <p>用 VR 全身遥操作录制演示。数据导出器把机器人状态、摄像头图像与遥操作动作存成 <a href="https://github.com/huggingface/lerobot" rel="noopener">LeRobot</a> 数据集。完整配置（摄像头服务器、VR 遥操作、录制控制）在<a href={OFFICIAL.docs.dataCollection} rel="noopener">Data Collection 教程</a>里。</p>
+    <pre class="code-block"><code>python gear_sonic/scripts/launch_data_collection.py \
+  --camera-host 192.168.123.164 \
+  --task-prompt "pick up the cup"</code></pre>
+  </section>
+
+  <section class="block wrap">
+    <h2>第 2 步 · 用 Isaac-GR00T 微调</h2>
+    <p>用 <a href="https://github.com/NVIDIA/Isaac-GR00T" rel="noopener">Isaac-GR00T</a> 训练管线在你的数据集上微调 GR00T N1.7 基础模型。前置条件：克隆并安装 Isaac-GR00T（<code>uv sync --all-extras</code>）、一台多 GPU 机器（建议 4+ 卡）、训练机器能访问数据集。</p>
+    <pre class="code-block"><code>git clone https://github.com/NVIDIA/Isaac-GR00T.git
+cd Isaac-GR00T
+uv sync --all-extras</code></pre>
+    <p>启动微调：</p>
+    <pre class="code-block"><code>export NUM_GPUS=4
+uv run python \
+    gr00t/experiment/launch_finetune.py \
+    --base-model-path nvidia/GR00T-N1.7-3B \
+    --dataset-path /path/to/your/collected_dataset \
+    --embodiment-tag UNITREE_G1_SONIC \
+    --modality-config-path gr00t/configs/data/embodiment_configs.py \
+    --num-gpus $NUM_GPUS \
+    --output-dir /path/to/output \
+    --save-total-limit 5 \
+    --save-steps 5000 \
+    --max-steps 20000 \
+    --use-wandb \
+    --global-batch-size 32 \
+    --color-jitter-params brightness 0.3 contrast 0.4 saturation 0.5 hue 0.08 \
+    --dataloader-num-workers 4</code></pre>
+    <p>关键参数：<code>--max-steps</code>（20k 是个不错的起点）、<code>--global-batch-size</code>（全部 GPU 的总和）、<code>--save-steps</code>（checkpoint 保存间隔）、<code>--use-wandb</code>（训练指标上报 Weights &amp; Biases）。Checkpoint 落在 <code>--output-dir</code> 里（checkpoint-5000 … checkpoint-20000 + config.json + processor_config.json）。</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>第 3 步 · 部署推理</h2>
+    <p>在 GPU 机器上启动 PolicyServer（从 Isaac-GR00T 仓库）：</p>
+    <pre class="code-block"><code>uv run python gr00t/eval/run_gr00t_server.py \
+    --model-path /path/to/output/checkpoint-20000 \
+    --embodiment-tag UNITREE_G1_SONIC \
+    --device cuda:0 \
+    --port 5550</code></pre>
+    <p>然后从 GR00T-WholeBodyControl 仓库运行推理：</p>
+    <pre class="code-block"><code>python gear_sonic/scripts/launch_inference.py \
+    --policy-host &lt;gpu_machine_ip&gt; \
+    --policy-port 5550 \
+    --camera-host 192.168.123.164 \
+    --prompt "pick up the soda can and place it in the bin"</code></pre>
+    <p>推理环境用 <code>bash install_scripts/install_inference.sh</code> 安装（会创建 <code>.venv_inference</code>），摄像头服务器作为 systemd 服务运行在机器人上，<code>gear_sonic_deploy</code> 必须编译。低延迟 checkpoint：用 <code>python download_from_hf.py --low-latency</code> 下载部署文件，用低延迟模型前缀与配套观测配置启动 <code>gear_sonic_deploy</code>。SONIC v1.1（机器人航向归一化）：用 <code>python download_from_hf.py --sonic-v1-1</code>。</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="VLA 全流程常见问题" />
+  </div>
+</Base>

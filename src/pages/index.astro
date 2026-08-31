@@ -62,6 +62,14 @@ const faqItems = [
   <section class="block wrap">
     <h2>Where it sits in NVIDIA's humanoid stack</h2>
     <p>MotionBricks is the motion-generation layer of the <a href={RELATED.sonicRepo} rel="noopener">GR00T Whole-Body Control</a> effort, next to <a href={RELATED.sonicPage} rel="noopener">GEAR-SONIC</a> (robotic whole-body control) and <a href={RELATED.kimodoPage} rel="noopener">Kimodo</a> (offline generation). See the <a href="/gr00t-sonic/">stack map</a> for how the pieces differ.</p>
+    <div class="grid" style="margin-top:16px">
+      <div class="card"><h3><a href="/gr00t-overview/">GR00T WBC overview</a></h3><p>The full stack: Decoupled WBC, GEAR-SONIC, MotionBricks — and the release timeline.</p></div>
+      <div class="card"><h3><a href="/sonic-models/">SONIC model selector</a></h3><p>Default vs Low-latency vs v1.1 — which checkpoint for which job.</p></div>
+      <div class="card"><h3><a href="/vla-workflow/">VLA workflow</a></h3><p>Collect teleop data, fine-tune Isaac-GR00T N1.7, deploy with SONIC.</p></div>
+      <div class="card"><h3><a href="/teleoperation/">Teleoperation</a></h3><p>VR, keyboard, gamepad, live camera — and the ZMQ streaming layer.</p></div>
+      <div class="card"><h3><a href="/motion-representation/">Motion representation</a></h3><p>The 418-dim feature vector, Global vs Local subsets, decoded.</p></div>
+      <div class="card"><h3><a href="/troubleshooting/">Troubleshooting</a></h3><p>The master error table for the whole GR00T/SONIC stack.</p></div>
+    </div>
   </section>
 
   <div class="wrap">

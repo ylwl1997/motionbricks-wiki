@@ -1,0 +1,157 @@
+---
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import { OFFICIAL } from "../../data/site.js";
+const faqItems = [
+  { q: "为什么安装页坚持要精确的 TensorRT 版本？", a: "官方文档带有一条危险警示：必须使用列出的精确 TensorRT 版本（x86_64 用 10.13，Jetson 配 JetPack 6 用 10.7）。使用其他版本会产生错误的推理结果——规划器会输出错误的动作，可能导致危险的机器人行为。" },
+  { q: "部署前需要把 G1 板载 Orin 刷成 JetPack 6 吗？", a: "G1 板载部署时，官方文档要求先把板载 Orin 升级到 JetPack 6 以支持 TensorRT。刷机指南（docs/source/references/jetpack6.md）覆盖升级过程；Jetson 的 TensorRT 10.7 TAR 包依赖它。" },
+  { q: "Native 安装还是 Docker——该选哪个？", a: "官方文档推荐 Native 开发：直接系统安装、构建更快、生产可用。Docker 镜像是 ROS2 开发环境（ROS2 Humble，支持 x86_64 与 Jetson）——打算做基于 ROS2 的输入输出时用它。两条路径在容器内/终端里跑相同的命令：source scripts/setup_env.sh，然后 just build。" },
+  { q: "deploy.sh 在真机上具体跑什么？", a: "从 gear_sonic_deploy/ 运行 ./deploy.sh --input-type zmq_manager real 启动 C++ 部署栈：TensorRT 策略推理（encoder → decoder）加运动学规划器，输入输出走 ZMQ 管理器。仿真时同一个命令用 sim 参数代替 real，并配合 run_sim_loop.py。" },
+];
+---
+<Base
+  title="SONIC 安装与部署：TensorRT、JetPack 6、Native 或 Docker | MotionBricks.wiki"
+  description="SONIC 部署安装中文指南：Ubuntu 20.04/22.04/24.04、精确 TensorRT 版本（x86_64 10.13 / Jetson 10.7）、JetPack 6、约 10 GB TAR 解压、Native 或 Docker 构建与 deploy.sh 命令——逐字来自官方 GR00T-WBC 文档。"
+  path="/installation-deploy/"
+  lang="zh"
+  crumbs={[{ label: "安装与部署", href: "/zh/installation-deploy/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">部署指南 · 命令逐字照录</p>
+      <h1>SONIC 安装与部署：<span style="color:var(--accent)">先装 TensorRT，再构建</span></h1>
+      <p class="lede">在 Unitree G1 上部署 SONIC 全身控制器是一次 C++ + TensorRT 构建，只有一条不可妥协的规则：先装精确版本的 TensorRT，再做别的。下面所有内容逐字摘自官方 <a href={OFFICIAL.docs.installationDeploy} rel="noopener">Installation (Deployment)</a> 与 <a href={OFFICIAL.docs.deploymentCode} rel="noopener">C++ Deployment Program Flow</a> 文档。</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="本页目录">
+      <p class="tt">本页目录</p>
+      <a href="#prereqs">前置要求</a>
+      <a href="#tensorrt">TensorRT 版本表</a>
+      <a href="#danger">危险警示</a>
+      <a href="#clone">克隆 + LFS</a>
+      <a href="#native">Native 安装</a>
+      <a href="#docker">Docker（ROS2）</a>
+      <a href="#deploy">deploy.sh</a>
+      <a href="#planner">规划器 ONNX</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+
+    <div>
+      <section id="prereqs" class="block">
+        <h2>前置要求</h2>
+        <ul>
+          <li><strong>Ubuntu 20.04/22.04/24.04</strong> 或其他基于 Debian 的 Linux 发行版</li>
+          <li><strong>CUDA Toolkit</strong>（用于 GPU 加速）</li>
+          <li><strong>TensorRT</strong>（用于推理优化）——先装这个！</li>
+          <li><strong>JetPack 6</strong>（用于板载部署）</li>
+          <li><strong>Python 3.8+</strong></li>
+          <li><strong>支持 LFS 的 Git</strong></li>
+        </ul>
+        <p>从 <a href="https://developer.nvidia.com/tensorrt/download/10x" rel="noopener">NVIDIA Developer</a> 下载 TensorRT。这是部署侧的安装；训练有自己的一条路径——见 <a href={OFFICIAL.docs.trainingData} rel="noopener">Training Data</a> 与 <a href={OFFICIAL.docs.training} rel="noopener">Training</a> 文档中的 Isaac Lab 设置。</p>
+      </section>
+
+      <section id="tensorrt" class="block">
+        <h2>TensorRT 版本（逐字）</h2>
+        <table>
+          <thead><tr><th>平台</th><th>TensorRT 版本</th></tr></thead>
+          <tbody>
+            <tr><td>x86_64（桌面）</td><td><strong>10.13</strong>（必需）</td></tr>
+            <tr><td>Jetson / G1 板载 Orin</td><td><strong>10.7</strong>（必需；需要 JetPack 6——<a href={OFFICIAL.docs.jetpack6} rel="noopener">刷机指南</a>）</td></tr>
+          </tbody>
+        </table>
+        <div class="note">下载 <strong>TAR</strong> 包（不是 DEB 包），这样可以把 TensorRT 解压到任意位置。压缩包约 10 GB；可以考虑用 <code>pv</code> 监控进度：</div>
+        <pre class="code-block"><code>sudo apt-get install -y pv
+pv TensorRT-*.tar.gz | tar -xz -f -</code></pre>
+        <p>把解压后的 TensorRT 移到 <code>~/TensorRT</code>（或类似位置），并加入你的 <code>~/.bashrc</code>：</p>
+        <pre class="code-block"><code>export TensorRT_ROOT=$HOME/TensorRT</code></pre>
+      </section>
+
+      <section id="danger" class="block">
+        <h2>安装前必读</h2>
+        <div class="warn">
+          <strong>危险：</strong>你<strong>必须</strong>使用上面列出的精确 TensorRT 版本。使用不同的版本已知会产生错误的推理结果——规划器会输出错误的动作，可能导致危险的机器人行为。
+        </div>
+        <p>这条警示照抄自官方文档。错误的 TensorRT 构建不会大声失败——它会静默劣化规划器输出，而在真机上这是安全问题，不是性能问题。</p>
+      </section>
+
+      <section id="clone" class="block">
+        <h2>克隆仓库</h2>
+        <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl
+git lfs pull          # make sure all large files are fetched</code></pre>
+        <p>仓库包含大型二进制资源（网格、ONNX 模型）；<code>git lfs pull</code> 拉取真实字节而不是指针文件。完整的 LFS 指南（包括 MotionBricks checkpoint 的注意事项）在<a href="/zh/setup/">安装指南页</a>。</p>
+      </section>
+
+      <section id="native" class="block">
+        <h2>Native 开发（推荐）</h2>
+        <p><strong>优点：</strong>直接系统安装、构建更快、生产可用。前置要求：基本开发工具（cmake、git 等），以及如果你打算做基于 ROS2 的输入输出，还需要 ROS2（可选）。</p>
+        <div class="warn">G1 板载部署时，板载 Orin 必须升级到 JetPack 6 以支持 TensorRT。升级请按 <a href={OFFICIAL.docs.jetpack6} rel="noopener">刷机指南</a>操作。</div>
+        <h3>1 · 安装系统依赖</h3>
+        <pre class="code-block"><code>cd gear_sonic_deploy
+chmod +x scripts/install_deps.sh
+./scripts/install_deps.sh</code></pre>
+        <h3>2 · 设置环境</h3>
+        <pre class="code-block"><code>source scripts/setup_env.sh</code></pre>
+        <p>设置脚本会自动配置 TensorRT 环境并设置所有必要路径。为了方便，可以把它加进你的 shell 配置：</p>
+        <pre class="code-block"><code>echo "source $(pwd)/scripts/setup_env.sh" >> ~/.bashrc</code></pre>
+        <h3>3 · 构建项目</h3>
+        <pre class="code-block"><code>just build</code></pre>
+        <p>其他 <code>just</code> 命令：<code>just clean</code>（清理构建产物）与 <code>just --list</code>（列出所有可用命令）。</p>
+      </section>
+
+      <section id="docker" class="block">
+        <h2>Docker（ROS2 开发环境）</h2>
+        <p>统一 Docker 环境，带 ROS2 Humble，支持 x86_64 与 Jetson 平台。</p>
+        <p><strong>前置要求：</strong>已安装 Docker 且用户已加入 docker 组；宿主机上设置 <code>TensorRT_ROOT</code> 环境变量；Jetson：JetPack 6.1+（CUDA 12.6）。</p>
+        <pre class="code-block"><code># 1. Add user to docker group (one-time setup)
+sudo usermod -aG docker $USER
+newgrp docker
+
+# 2. Set TensorRT path (add to ~/.bashrc for persistence)
+export TensorRT_ROOT=/path/to/TensorRT
+
+# 3. Launch container
+cd gear_sonic_deploy
+./docker/run-ros2-dev.sh</code></pre>
+        <p><strong>选项：</strong></p>
+        <pre class="code-block"><code>./docker/run-ros2-dev.sh               # Standard build (fast)
+./docker/run-ros2-dev.sh --rebuild     # Force rebuild
+./docker/run-ros2-dev.sh --with-opengl # Include OpenGL for visualization (RViz, Gazebo)</code></pre>
+        <p><strong>架构支持：</strong>x86_64 —— CUDA 12.4.1（需要 NVIDIA 驱动 550+）；Jetson —— CUDA 12.6 宿主上的 CUDA 12.4.1 容器（向前兼容）。容器内：</p>
+        <pre class="code-block"><code>source scripts/setup_env.sh # set up dependency
+just build                  # Build
+just --list                 # Show all commands</code></pre>
+        <p><strong>排错：</strong>如果报 "permission denied"，确认你在 docker 组里；TensorRT 必须在启动容器前在<strong>宿主机</strong>上设置好；Jetson 先在宿主机运行 <code>source scripts/setup_env.sh</code>（设置 jetson_clocks）。</p>
+      </section>
+
+      <section id="deploy" class="block">
+        <h2>运行部署栈</h2>
+        <p>C++ 部署二进制是 <code>gear_sonic_deploy</code>，通过 <code>deploy.sh</code> 启动。输入接口：<code>keyboard | gamepad | gamepad_manager | zmq | zmq_manager | ros2 | manager</code>；通过 <code>--output-type zmq|ros2|all</code> 发布输出。</p>
+        <pre class="code-block"><code>cd gear_sonic_deploy
+./deploy.sh --input-type zmq_manager real</code></pre>
+        <p>仿真（MuJoCo）时改用 <code>sim</code> 参数——部署二进制连接仿真循环而不是真实硬件：</p>
+        <pre class="code-block"><code>./deploy.sh --input-type zmq_manager sim
+# Wait until you see "Init done"</code></pre>
+        <p>默认部署使用默认 SONIC checkpoint。低延迟或 SONIC v1.1 checkpoint 时，把 deploy.sh 指向对应的模型前缀与观测配置（按模型卡<a href="/zh/sonic-models/">对比页</a>）：</p>
+        <pre class="code-block"><code>./deploy.sh \
+--cp policy/low_latency/model \
+--obs-config policy/low_latency/observation_config.yaml \
+--input-type zmq_manager \
+real</code></pre>
+        <p>数据采集与 VLA 执行都构建在这个栈之上——见<a href="/zh/data-collection/">数据采集</a>与<a href="/zh/vla-workflow/">VLA 全流程</a>。</p>
+      </section>
+
+      <section id="planner" class="block">
+        <h2>规划器 ONNX 文件</h2>
+        <p>启用规划器模式时，运动学规划器与策略并行运行。它是一个 ONNX 模型，通过 <code>--planner-file</code> 传入（ROS2、<code>gamepad_manager</code> 与 <code>zmq_manager</code> 规划器模式的必需项）。官方示例路径：</p>
+        <pre class="code-block"><code>--planner-file planner/target_vel/V2/planner_sonic.onnx</code></pre>
+        <p>在部署流程中，规划器生成目标动画（启用时），动作读取器为非规划器模式提供参考动作，策略推理在 TensorRT 上执行 encoder → decoder，结果通过 ZMQ 或 ROS2 发布。用 <code>just run freq_test policy/example/model_step_000000.onnx</code> 检查 ONNX 模型的输入输出信息——报告的频率不是 TensorRT 推理速度。VR 遥操作与 ZMQ 管理器模式见<a href="/zh/teleoperation/">遥操作指南</a>。</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="安装与部署常见问题" />
+  </div>
+</Base>
