@@ -1,0 +1,91 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, RELATED, PROJ_IMAGES, HEADLINE_STATS, CORRECTION_5K, LICENSE } from "../data/site.js";
+const faqItems = [
+  { q: "Is MotionBricks made by NVIDIA?", a: "Yes. MotionBricks is an NVIDIA research project — the paper's author affiliation list on the official project page is led by NVIDIA (with co-authors at ETH Zürich, Simon Fraser University and The University of Texas at Austin), and the code is published under the NVlabs GitHub organization as part of NVIDIA's GR00T Whole-Body Control effort. This site is an unofficial guide about it, not an NVIDIA property." },
+  { q: "Where is the NVIDIA MotionBricks GitHub?", a: "MotionBricks ships as a subproject of the GR00T-WholeBodyControl monorepo: github.com/NVlabs/GR00T-WholeBodyControl, path motionbricks/. Pretrained checkpoints and demo assets are Git LFS-tracked inside it, so clone with Git LFS installed — the setup guide covers the exact lfs pull commands." },
+  { q: "Is 'motion bricks' or 'nvidia motionbrix' a different product?", a: "No. The official name is MotionBricks, one word. Searches also return motion bricks (two words), motion-bricks, motionbrick, and the misspelling nvidia motionbrix — they all refer to the same SIGGRAPH 2026 release covered here." },
+  { q: "Is NVIDIA MotionBricks free for commercial use?", a: "Source code is Apache License 2.0. Pretrained weights fall under the NVIDIA Open Model License, which permits commercial use with attribution subject to its trustworthy-AI requirements. Verify the license texts in the official repository before shipping a product." },
+];
+---
+<Base
+  title="NVIDIA MotionBricks: what it is and how to get it | MotionBricks.wiki"
+  description="NVIDIA MotionBricks (motion bricks, sometimes misspelled motionbrix) — the real-time motion model behind GR00T Whole-Body Control. What NVIDIA shipped, where the GitHub is, licensing."
+  path="/nvidia/"
+  crumbs={[{ label: "NVIDIA MotionBricks", href: "/nvidia/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Overview · NVIDIA's motion-generation layer</p>
+      <h1>NVIDIA MotionBricks: <span style="color:var(--accent)">the whole picture in one page</span></h1>
+      <p class="lede">MotionBricks — written as two words in many searches, and occasionally misspelled "nvidia motionbrix" — is NVIDIA's real-time generative motion framework, presented at SIGGRAPH 2026 / ACM Transactions on Graphics. This page gathers what NVIDIA has actually released, where it lives, and what you may do with it.</p>
+      <div class="stats">
+        {HEADLINE_STATS.map((s) => (
+          <div class="stat"><span class="v">{s.v}</span><span class="u">{s.unit}</span><div class="n">{s.note}</div></div>
+        ))}
+      </div>
+      <p class="warn" style="margin-top:22px">{CORRECTION_5K}</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>What NVIDIA built</h2>
+    <figure>
+      <img src={PROJ_IMAGES.overview} alt="MotionBricks overview image from the official project page: unified control across animation and robotics scenes" loading="lazy" />
+      <figcaption>Official overview image, hosted on NVIDIA's project page.</figcaption>
+    </figure>
+    <p>In one sentence from the paper's own framing: a large-scale modular latent generative model — trained on 350,000+ motion clips and running at 15,000 FPS with 2 ms latency — paired with "smart primitives" that expose it as simple commands: velocity, heading and style for locomotion; proxy keyframes for object interaction. New tasks are handled zero-shot, and the flagship UE5 demo states its recipe as no foot-locking, no blending, no collision detection, no hand-authored transitions. The full breakdown is on the <a href="/architecture/">architecture page</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Where it sits: a core organic component of GR00T WBC</h2>
+    <p>MotionBricks does not stand alone at NVIDIA. The official project page says it directly — quoting the words used there: MotionBricks "is now a <strong>core organic component</strong> of NVIDIA's GR00T Whole-Body Control effort, powering the motion-generation layer of the stack." Next to it sits <a href={RELATED.sonicPage} rel="noopener">GEAR-SONIC</a> (whole-body robot control) and sibling offline generator <a href={RELATED.kimodoPage} rel="noopener">Kimodo</a>. How the layers differ — and which SONIC checkpoint's lookahead (200 ms / 80 ms / 200 ms) fits your teleop budget — is mapped on the <a href="/gr00t-sonic/">GR00T-SONIC page</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>How to get it</h2>
+    <p>The code lives inside the <strong>GR00T-WholeBodyControl monorepo</strong> under the NVlabs GitHub organization — this is the answer to "where is the nvidia motionbricks github". The clone path from the README, verbatim:</p>
+    <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl/motionbricks</code></pre>
+    <p>Checkpoints (~2.2 GB, four files) are LFS-tracked and skipped by default; the <a href="/setup/">setup guide</a> has the exact <code>git lfs pull</code> commands and the 1 KB pointer-file check that catches the usual install failure. Requirements per the README: Python 3.10+, a CUDA-capable GPU, Git LFS.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>License summary</h2>
+    <table>
+      <thead><tr><th>What</th><th>License</th></tr></thead>
+      <tbody>
+        <tr><td>Source code</td><td><strong>{LICENSE.code}</strong></td></tr>
+        <tr><td>Pretrained weights</td><td><strong>{LICENSE.weights}</strong></td></tr>
+      </tbody>
+    </table>
+    <p class="note">This is a summary of the README's license section, not the legal text — read the license files in the official repository before commercial use.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Official NVIDIA channels — the complete list</h2>
+    <ul>
+      <li>Project page: <a href={OFFICIAL.projectPage} rel="noopener">nvlabs.github.io/motionbricks</a></li>
+      <li>Code (monorepo): <a href={OFFICIAL.parentRepo} rel="noopener">github.com/NVlabs/GR00T-WholeBodyControl</a> · <a href={OFFICIAL.repo} rel="noopener">motionbricks/ subdirectory</a></li>
+      <li>Paper PDF: <a href={OFFICIAL.paperPdf} rel="noopener">SIGGRAPH 2026 paper</a> · <a href={OFFICIAL.arxiv} rel="noopener">arXiv:2604.24833</a> · <a href={OFFICIAL.doi} rel="noopener">DOI 10.1145/3811334</a></li>
+      <li>4K demo download: <a href={OFFICIAL.demo4k} rel="noopener">the uncut UE5 runtime demo (1.2 GB)</a></li>
+      <li>Training datasets: <a href={RELATED.bonesDatasets} rel="noopener">bones.studio/datasets</a> · <a href={RELATED.bonesSeed} rel="noopener">BONES-SEED on Hugging Face</a></li>
+      <li>Motion representation docs: <a href={OFFICIAL.motionReprDocs} rel="noopener">docs/motion_representation.md</a> · custom data: <a href={OFFICIAL.customDatasetDocs} rel="noopener">docs/adding_your_own_dataset.md</a></li>
+      <li>NVIDIA contact for the project: <a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a></li>
+    </ul>
+  </section>
+
+  <section class="block wrap">
+    <h2>Pick your path from here</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/setup/">Install it</a></h3><p>LFS-aware clone, checkpoints, dependencies — 20 minutes to a running demo.</p></div>
+      <div class="card"><h3><a href="/ue5/">UE5 integration</a></h3><p>What NVIDIA shipped for Unreal and what is video-and-paper only.</p></div>
+      <div class="card"><h3><a href="/gr00t-sonic/">GR00T & SONIC</a></h3><p>The robotics layer MotionBricks feeds, model by model.</p></div>
+      <div class="card"><h3><a href="/news/">Release news</a></h3><p>Preview, roadmap and the full-release status, dated and sourced.</p></div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="NVIDIA MotionBricks FAQ" />
+  </div>
+</Base>

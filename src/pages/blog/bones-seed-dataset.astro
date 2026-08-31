@@ -1,0 +1,43 @@
+---
+export const title = "Downloading BONES-SEED: the dataset behind MotionBricks' 350,000 clips — MotionBricks.wiki";
+export const description = "Where MotionBricks' training corpus actually lives: bones.studio/datasets per the README, the Hugging Face page with 142,220 retargeted G1 clips (~288 hours), and what the shipped training scripts do without it.";
+const slug = "bones-seed-dataset";
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, RELATED, GIFS } from "../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`}
+  crumbs={[{ label: "News", href: "/news/" }, { label: "BONES-SEED dataset", href: `/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Data guide · training corpus</p>
+      <h1>BONES-SEED: <span style="color:var(--accent)">where the 350,000 clips live</span></h1>
+      <p class="lede">Every MotionBricks explainer quotes “over 350,000 motion clips” and then stops. This post follows the paper trail instead: which page the README points to, what the dataset itself says it contains, and how the released training scripts behave with and without it.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Three pages, three different roles</h2>
+    <ul>
+      <li><strong>The README's pointer.</strong> The <a href={OFFICIAL.repo} rel="noopener">MotionBricks README</a> names <a href={RELATED.bonesDatasets} rel="noopener">bones.studio/datasets</a> as the place to download the motion datasets — twice, in the Training section and again under Dataset. Related Work describes the corpus as “350k production-grade mocap clips from real human actors and actresses.”</li>
+      <li><strong>The dataset page.</strong> The <a href={RELATED.bonesSeed} rel="noopener">BONES-SEED card on Hugging Face</a> is where the corpus details live: the official page counts <strong>142,220 clips and roughly 288 hours</strong> — the G1-retargeted trajectories inside the larger mocap collection. Read the card for exactly what each subset contains.</li>
+      <li><strong>This site's fact sheet.</strong> <a href="/">The home page</a> links the 350,000 figure back to the sentence on the project page it came from, and the <a href="/blog/what-350000-15000-actually-mean/">correction post</a> untangles which number refers to what.</li>
+    </ul>
+    <figure style="max-width:560px">
+      <img src={GIFS.bonesSeedTeaser} alt="BONES-SEED dataset teaser GIF from the MotionBricks README Related Work section" loading="lazy" width="480" height="270" />
+      <figcaption>BONES-SEED teaser — hosted in NVIDIA's repository, linked not mirrored.</figcaption>
+    </figure>
+    <div class="note">Both figures are real and both come from official pages; they describe different counts. The “350k” line is the README's summary of the mocap corpus; the 142,220-clip, ~288-hour line is the Hugging Face card's inventory. Do not average them into one number.</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>How it feeds training — and what happens if you skip it</h2>
+    <p>One more pipeline step before the data is MotionBricks-shaped: the <a href={RELATED.somaRetargeter} rel="noopener">SOMA Retargeter</a> is the Newton-based solver that converts SOMA capture onto the G1's skeleton, producing the robot-ready trajectories.</p>
+    <p>Then, from the README verbatim in spirit: the shipped training scripts (<code>train_vqvae.py</code>, <code>train_pose.py</code>, <code>train_root.py</code>) <strong>default to synthetic data</strong>, on purpose — so you can verify the whole pipeline end-to-end without downloading the real corpus. The real dataset is what you need to <strong>reproduce the pretrained checkpoints</strong>, not to make the code run.</p>
+    <p>Practical order, after the <a href="/setup/">setup guide</a>: (1) run synthetic training to prove the environment works; (2) pull BONES-SEED from the pages above once you actually care about reproduced weights; (3) check licensing on the dataset's own page before any commercial plan — this unofficial guide will not paraphrase terms you can read there in one minute.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Why the corpus matters to the architecture story</h2>
+    <p>The scalability claim — one latent backbone covering 350,000-plus clips instead of a model zoo — is only interesting because the data is broad: walking, crawling, injured gaits, object contact. The GIF gallery in the README (see a few on the <a href="/styles/">styles page</a>) is effectively a sampling of that breadth. When someone asks “is 350,000 a big number for motion capture,” the more useful answer is what it is big <em>relative to</em>: prior single-model motion work trained on substantially smaller corpora, which the <a href={OFFICIAL.arxiv} rel="noopener">paper</a> discusses in its related-work sections.</p>
+  </section>
+</Base>

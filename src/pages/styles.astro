@@ -1,0 +1,80 @@
+---
+import Base from "../layouts/Base.astro";
+import { OFFICIAL, GIFS, KEYBINDS_STYLE, KEYBIND_NOTE, KEY_DEFAULT } from "../data/site.js";
+const singleStyles = [
+  { gif: GIFS.locoZombie, title: "Zombie walk", key: "F — zombie walk", alt: "Humanoid lurching forward in a dragging zombie walk while following locomotion commands" },
+  { gif: GIFS.locoInjuredLeg, title: "Injured leg", key: "T — injured walk (gallery name: injured leg)", alt: "Humanoid limping with one leg loaded, favoring the injured side while walking" },
+  { gif: GIFS.locoInjuredTorso, title: "Injured torso", key: "T — injured walk (gallery name: injured torso)", alt: "Humanoid hunched and guarding its torso while moving — injured-torso style" },
+  { gif: GIFS.locoSkipping, title: "Skipping", key: "no demo key in the README table — gallery style", alt: "Humanoid skipping along with a rope-like jumping cadence — the skipping style GIF" },
+  { gif: GIFS.locoStrafing, title: "Strafing", key: "no demo key — lateral movement via A / D", alt: "Humanoid sidestepping laterally without turning — strafing while facing forward" },
+  { gif: GIFS.locoCrouchStrafing, title: "Crouch strafing", key: "C is crouched stealth walk; strafing itself has no demo key", alt: "Humanoid in a low crouch, sliding sideways — crouch strafing style" },
+];
+const mixtureStyles = [
+  { gif: GIFS.locoFreestyle, title: "Freestyle", key: "style keys combined while moving", alt: "Humanoid flowing between several locomotion styles in one continuous run — freestyle mixture" },
+  { gif: GIFS.locoIdleWalkJogRun, title: "Idle · Walk · Jog · Run", key: "no style key — default locomotion, varying speed", alt: "The same humanoid transitioning through idle, walk, jog and run as speed command changes" },
+];
+---
+<Base
+  title="MotionBricks style library: all 11 style keybinds with GIFs | MotionBricks.wiki"
+  description="Every MotionBricks locomotion style — zombie, injured, skipping, strafing, crouched, crawling — with the exact demo keybind, official GIF, and the skating and crawling caveats."
+  path="/styles/"
+  crumbs={[{ label: "Styles", href: "/styles/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Reference · keybinds verbatim from the README</p>
+      <h1>The MotionBricks style library, <span style="color:var(--accent)">key by key and GIF by GIF</span></h1>
+      <p class="lede">Eleven style keys, one model. Hold a style key, steer with WASD, and the same backbone regenerates your gait live — the "style" channel of the locomotion primitive (see <a href="/architecture/">how smart primitives work</a>). You need a working install to try them: start with <a href="/setup/">setup</a> and the <a href="/g1-demo/">demo controls</a>.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>All 11 style keybinds</h2>
+    <table>
+      <thead><tr><th>Key</th><th>Style</th></tr></thead>
+      <tbody>{KEYBINDS_STYLE.map(([k, a]) => <tr><td><span class="kbd">{k}</span></td><td>{a}</td></tr>)}</tbody>
+    </table>
+    <p>{KEY_DEFAULT}</p>
+    <div class="note"><strong>Stated limitation:</strong> {KEYBIND_NOTE}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Single styles</h2>
+    <p>The project page groups these as "distinct stylized locomotion — injured, zombie, skipping, strafing — generated zero-shot from a single smart-primitive prompt":</p>
+    <div class="gifgrid">
+      {singleStyles.map((s) => (
+        <figure>
+          <img src={s.gif} alt={s.alt} loading="lazy" width="640" height="360" />
+          <figcaption><strong>{s.title}</strong> — official gallery GIF, hosted by NVIDIA. Demo key: <span class="kbd">{s.key}</span></figcaption>
+        </figure>
+      ))}
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Mixture of styles</h2>
+    <p>"Continuous runtime transitions across speed, direction, and gait — dialed live from user commands" (project page). This is where the no-blending claim becomes visible: transitions are generated, not cross-faded:</p>
+    <div class="gifgrid">
+      {mixtureStyles.map((s) => (
+        <figure>
+          <img src={s.gif} alt={s.alt} loading="lazy" width="640" height="360" />
+          <figcaption><strong>{s.title}</strong> — official gallery GIF, hosted by NVIDIA.</figcaption>
+        </figure>
+      ))}
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Looking for a skating style? Here is the honest answer</h2>
+    <p><strong>MotionBricks has no skating style in the preview release.</strong> Neither the README's 11-key style table nor the project page's gallery includes ice skating, and this guide will not map an unrelated key to it just to fill a search term.</p>
+    <p>The closest released style is <strong>skipping</strong> — the rope-jump cadence GIF above is the nearest thing to a gliding, bouncy stride in the current set (skipping has no letter key in the demo table itself; the style appears in the official gallery). If a skater-like gait matters to your project, the realistic options are: wait for new styles with the <a href="/news/">full release</a>, or train on your own data via the <a href={OFFICIAL.customDatasetDocs} rel="noopener">custom-dataset docs</a> and the <a href="/training/">training pipeline</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Try the styles yourself</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/g1-demo/">Demo controls</a></h3><p>The launch command, camera-relative movement, and what to do when keys do not register.</p></div>
+      <div class="card"><h3><a href="/setup/">Setup guide</a></h3><p>Clone, LFS pull, checkpoints — the prerequisite for any style key.</p></div>
+      <div class="card"><h3><a href="/assets/">Official assets</a></h3><p>The full GIF gallery and every official source link in one index.</p></div>
+    </div>
+  </section>
+</Base>

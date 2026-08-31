@@ -1,0 +1,46 @@
+---
+import Base from "../layouts/Base.astro";
+import { OFFICIAL, GIFS } from "../data/site.js";
+---
+<Base
+  title="MotionBricks 解説（非公式ガイド）— NVIDIA のリアルタイム モーション生成 | MotionBricks.wiki"
+  description="NVIDIA MotionBricks の非公式コミュニティガイド（日本語要約）。15,000 FPS のリアルタイム生成、smart primitives、セットアップ手順と正直な制限。すべての数値は公式ソースへリンク。"
+  path="/ja/"
+  lang="ja"
+  crumbs={[{ label: "日本語", href: "/ja/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">非公式コミュニティガイド · SIGGRAPH 2026</p>
+      <h1>MotionBricks：NVIDIA のリアルタイム モーション生成モデルを <span style="color:var(--accent)">日本語で要約</span></h1>
+      <p class="lede">MotionBricks は、事前に作成したアニメーションクリップを再生する代わりに、ヒューマノイドのアニメーションとロボット動作をリアルタイムに生成する。本サイトは非公式ガイドで、数値はすべて NVIDIA の公式ページのものとリンクで結ばれている。サイト本体は英語で、このページは要点を要約し、各ガイドへ導く。</p>
+      <div class="stats">
+        <div class="stat"><span class="v">15,000</span><span class="u">FPS</span><div class="n">生成スループット（公式ページ表記は 15000 FPS）</div></div>
+        <div class="stat"><span class="v">2</span><span class="u">ms</span><div class="n">公式プロジェクトページが示すレイテンシ</div></div>
+        <div class="stat"><span class="v">350,000+</span><span class="u">クリップ</span><div class="n">単一のニューラルバックボーンがカバーするモーションクリップ数</div></div>
+      </div>
+      <p style="margin-top:20px"><a class="btn" href="/setup/">MotionBricks をセットアップする（英語ガイド、コマンドはそのままコピー可）</a></p>
+      <p class="warn" style="margin-top:18px">コミュニティの投稿に「5,000 FPS」という数値が出回っているが誤り。公式ページと README のいずれも 15,000 FPS / 15000 FPS と記載している。拡散したスレッドではなく論文を引用すること。</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>3 分でわかる MotionBricks</h2>
+    <p><strong>モデル</strong>：VQVAE トークナイザと pose / root の各モデルからなるモジュール型潜在バックボーンが、35 万超のモーションクリップを単一モデルでカバー。SIGGRAPH 2026（ACM Transactions on Graphics）発表で、<a href={OFFICIAL.projectPage} rel="noopener">公式プロジェクトページ</a>と <a href={OFFICIAL.arxiv} rel="noopener">arXiv</a> に PDF へのリンクがある。</p>
+    <p><strong>操作面</strong>：「smart primitives」が制御の窓口。locomotion は速度・向き・スタイルの入力組合せ、objects は代理キーフレームをバックボーンが補完する。公式資料の主張では、フットロックもブレンディングも衝突検出も手書き遷移も不要。</p>
+    <p><strong>公開状況</strong>：プレビュー版（2026-04-27）は <a href={OFFICIAL.repo} rel="noopener">GitHub の GR00T-WholeBodyControl リポジトリ</a>にあり、MuJoCo 上の G1 インタラクティブデモ、事前学習済みチェックポイント、学習コードを含む。UE5 / Unity の公式プラグインは現時点で存在しない。ロードマップはプレビューから約 1 か月後の完全リリースを挙げている。</p>
+    <figure style="max-width:560px">
+      <img src={GIFS.teaserRobotics} alt="MotionBricks が生成した動作を実行する Unitree G1 ヒューマノイドの公式ティーザー GIF" loading="lazy" width="640" height="360" />
+      <figcaption>NVIDIA 公式 README ギャラリーの GIF（当サイトには複製していない）。</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>次に読む場所</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/setup/">セットアップ手順</a></h3><p>Git LFS 付き clone、約 2.2 GB のチェックポイント取得、1 KB ポインタファイルの落とし穴。</p></div>
+      <div class="card"><h3><a href="/g1-demo/">G1 デモの操作</a></h3><p>WASD + スタイル 11 キーの全キー表と既知の問題。</p></div>
+      <div class="card"><h3><a href="/blog/what-350000-15000-actually-mean/">数値の正しい解釈（英語）</a></h3><p>「15,000 FPS」と「350,000」が実際に何を数えているかの解説。</p></div>
+      <div class="card"><h3><a href="/">英語版の本館</a></h3><p>アーキテクチャ、スタイル一覧、UE5 / Unity、GR00T・SONIC スタック、ニュース。</p></div>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,58 @@
+---
+import Base from "../layouts/Base.astro";
+import { OFFICIAL, RELATED } from "../data/site.js";
+---
+<Base
+  title="MotionBricks community: where discussion happens and how to contribute | MotionBricks.wiki"
+  description="Where to actually talk about NVIDIA MotionBricks — official contact, GitHub issues and discussions, third-party search links for Reddit — plus how to report a problem or contribute a fix to this unofficial wiki."
+  path="/community/"
+  crumbs={[{ label: "Community", href: "/community/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Community · no invented forums, no borrowed authority</p>
+      <h1>Talking about <span style="color:var(--accent)">MotionBricks</span> with people</h1>
+      <p class="lede">This project is young — the public preview landed 2026-04-27 — so "community" mostly means the official repo and whatever threads people have started elsewhere. Here is the honest map: what exists, who runs it, and what this site does not vouch for.</p>
+    </div>
+  </section>
+
+  <section class="block wrap" id="where">
+    <h2>Where discussion actually happens</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Official NVIDIA channel</h3>
+        <p>The MotionBricks README lists one contact for questions and feedback: <code>{OFFICIAL.contact}</code>. That is NVIDIA's own address for the project — reach it directly, not through this site.</p>
+      </div>
+      <div class="card">
+        <h3>GitHub issues &amp; discussions</h3>
+        <p>Bugs, setup problems, and feature requests belong in the open: <a href={OFFICIAL.parentRepo} rel="noopener">NVlabs/GR00T-WholeBodyControl</a> (MotionBricks is the <code>motionbricks/</code> subproject). Issues there are the most likely path to an answer from the people building it.</p>
+      </div>
+      <div class="card">
+        <h3>Project page</h3>
+        <p><a href={OFFICIAL.projectPage} rel="noopener">nvlabs.github.io/motionbricks</a> is the canonical demo and paper hub — its template lineage (a Nerfies-style page) tells you little; the content tells you everything.</p>
+      </div>
+    </div>
+    <h3>Reddit, X, and the rest</h3>
+    <p>Searching for "motionbricks" on Reddit turns up community discussion — but this site does not monitor, verify, or endorse any individual post, and it lists no specific threads because those age and get wrong. If you want the current chatter, use the search directly and treat it as <strong>third-party</strong>:</p>
+    <ul>
+      <li>Reddit search: <a href="https://www.reddit.com/search/?q=motionbricks" rel="noopener nofollow">reddit.com/search/?q=motionbricks</a> (third-party, unaffiliated)</li>
+    </ul>
+    <div class="note"><strong>Why so few links?</strong> The most-repeated "fact" circulating in community posts is a wrong figure — 5,000 FPS where the official sources say 15,000 (see the <a href="/">home page correction</a>). Third-party threads are where to find <em>questions</em>, not answers.</div>
+  </section>
+
+  <section class="block wrap" id="contribute">
+    <h2>Contributing to this wiki</h2>
+    <p>MotionBricks.wiki is an unofficial guide maintained by one editor. To report a stale page, a dead link, or a fact that disagrees with an official source, email <code>hello@motionbricks.wiki</code>.</p>
+    <div class="warn"><strong>Read this before you write:</strong> <code>hello@motionbricks.wiki</code> is this site's contact address only. It is <em>not</em> a NVIDIA support channel and has no relationship to NVIDIA — for anything about the software itself, use <code>{OFFICIAL.contact}</code> or GitHub. (Same policy as the <a href="/about/">about page</a>.)</div>
+    <p>What gets acted on fastest: a link to the official source that contradicts something here, a reproducible setup failure with the exact command and error text, or a new dated entry from either README.</p>
+  </section>
+
+  <section class="block wrap" id="ground-rules">
+    <h2>Ground rules for anything landing on this site</h2>
+    <ol>
+      <li><strong>Every fact carries an official source link.</strong> Project page, README, paper, model card, or an NVIDIA-hosted file. No source, no page.</li>
+      <li><strong>Speculation is labelled.</strong> Anything about unreleased features (Unity support, engine plugins, the roadmap window) is marked as opinion or estimate, never stated as fact.</li>
+      <li><strong>"Official support" claims are rejected.</strong> This site is unaffiliated with NVIDIA and never presents itself, or community findings, as endorsed by them. Contributions phrased as official statements get bounced.</li>
+    </ol>
+    <p style="color:var(--ink-2)">The related projects worth knowing when a question is out of MotionBricks' scope: <a href="/gr00t-sonic/">GEAR-SONIC</a> for robot control, <a href={RELATED.kimodoPage} rel="noopener">Kimodo</a> for offline generation, <a href={RELATED.bonesSeed} rel="noopener">BONES-SEED</a> for the training data.</p>
+  </section>
+</Base>

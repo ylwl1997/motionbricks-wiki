@@ -1,0 +1,70 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, RELATED, GIFS, PROJ_IMAGES, HEADLINE_STATS, CORRECTION_5K, KEYBINDS_STYLE } from "../data/site.js";
+const faqItems = [
+  { q: "What is MotionBricks?", a: "MotionBricks is NVIDIA's real-time generative motion framework, presented at SIGGRAPH 2026 (ACM Transactions on Graphics). It generates humanoid animation and robot control motion on the fly — 15,000 FPS of synthesis at 2 ms latency, trained on over 350,000 motion clips with a single neural backbone — instead of playing back pre-authored animation clips." },
+  { q: "MotionBricks vs Motion Bricks — same thing?", a: "Yes. The project is officially written MotionBricks (one word, camel case). Community posts also write motion bricks, motion-bricks, motionbrick, and occasionally nvidia motion brix — all refer to the same NVIDIA Labs release covered here." },
+  { q: "Is this the official MotionBricks website?", a: "No. This is an unofficial community guide. The official sources are the project page at nvlabs.github.io/motionbricks and the GR00T-WholeBodyControl GitHub repository; every claim here links to one of them." },
+  { q: "Does MotionBricks need an animation blueprint or state machine?", a: "No. The core claim of the paper is replacing hand-authored transition graphs with smart primitives: you command velocity, heading and style, and the single model composes the motion. The official demo states no foot-locking, no blending, no collision detection and no hand-authored transitions." },
+  { q: "Can I use it for free in a commercial project?", a: "The source code is Apache 2.0. Pretrained weights are under the NVIDIA Open Model License, which permits commercial use with attribution subject to its trustworthy-AI terms. This is an unofficial guide — verify the license texts in the official repository before shipping." },
+];
+---
+<Base
+  title="MotionBricks / Motion Bricks Explained — NVIDIA's Real-Time Motion Model | MotionBricks.wiki"
+  description="An unofficial, source-checked guide to MotionBricks (NVIDIA motion bricks): 15,000 FPS real-time motion generation, smart primitives, setup walkthrough, G1 demo, UE5 integration and the honest limits."
+  path="/">
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Unofficial community guide · SIGGRAPH 2026</p>
+      <h1>MotionBricks: NVIDIA's real-time motion model, <span style="color:var(--accent)">explained end to end</span></h1>
+      <p class="lede">MotionBricks (also written Motion Bricks) generates humanoid animation and robot motion live instead of playing back authored clips. This guide walks you from a working G1 demo to UE5 integration — every number linked to NVIDIA's own sources.</p>
+      <p style="margin-top:26px">
+        <a class="btn" href="/setup/">Install MotionBricks on your CUDA box</a>
+        <span class="unofficial-tag" style="margin-left:14px">Free code (Apache 2.0) · no account, no license key to read this site</span>
+      </p>
+      <div class="stats">
+        {HEADLINE_STATS.map((s) => (
+          <div class="stat"><span class="v">{s.v}</span><span class="u">{s.unit}</span><div class="n">{s.note}</div></div>
+        ))}
+      </div>
+      <p class="warn" style="margin-top:22px">{CORRECTION_5K}</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>What it actually does</h2>
+    <div class="gifgrid">
+      <figure>
+        <img src={GIFS.teaserAnimation} alt="MotionBricks animation teaser: a stylized character moving through varied terrain" loading="lazy" width="640" height="360" />
+        <figcaption>Animation teaser — official GIF, hosted by NVIDIA. <a href={OFFICIAL.projectPage} rel="noopener">Source</a></figcaption>
+      </figure>
+      <figure>
+        <img src={GIFS.teaserRobotics} alt="MotionBricks robotics teaser: a Unitree G1 humanoid executing whole-body motion" loading="lazy" width="640" height="360" />
+        <figcaption>Robotics teaser on the Unitree G1 — official GIF, hosted by NVIDIA. <a href={OFFICIAL.repo} rel="noopener">Source</a></figcaption>
+      </figure>
+    </div>
+    <p style="margin-top:18px">Two ideas carry the whole design. A <strong>modular latent backbone</strong> models a 350,000-plus clip corpus in one model, so adding skills does not mean adding systems. <strong>Smart primitives</strong> — locomotion, objects, interaction — give you one command surface for navigation and object contact, <a href={OFFICIAL.arxiv} rel="noopener">as described in the paper</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Start here</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/setup/">Setup guide</a></h3><p>Clone with Git LFS, pull the ~2.2 GB checkpoints, avoid the 1 KB pointer-file trap, run the demo. The page most people need.</p></div>
+      <div class="card"><h3><a href="/g1-demo/">Interactive G1 demo</a></h3><p>All 15 keyboard controls (WASD plus 11 style keys), the camera tricks, and what the crawling-mode limitation means.</p></div>
+      <div class="card"><h3><a href="/ue5/">UE5 integration</a></h3><p>How the official 2:40 uncut demo was authored, and what is public versus still unreleased for engine work.</p></div>
+      <div class="card"><h3><a href="/unity/">Unity status</a></h3><p>The honest answer on Unity: no official plugin today — here are the realistic bridge paths and their costs.</p></div>
+      <div class="card"><h3><a href="/architecture/">How it works</a></h3><p>VQVAE tokenizer, pose and root models, what zero-shot means here, and where the training data comes from.</p></div>
+      <div class="card"><h3><a href="/styles/">Style library</a></h3><p>Zombie, skipping, strafing, crouch-strafing, injured walk — every released style with its keybind and source GIF.</p></div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Where it sits in NVIDIA's humanoid stack</h2>
+    <p>MotionBricks is the motion-generation layer of the <a href={RELATED.sonicRepo} rel="noopener">GR00T Whole-Body Control</a> effort, next to <a href={RELATED.sonicPage} rel="noopener">GEAR-SONIC</a> (robotic whole-body control) and <a href={RELATED.kimodoPage} rel="noopener">Kimodo</a> (offline generation). See the <a href="/gr00t-sonic/">stack map</a> for how the pieces differ.</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} />
+  </div>
+</Base>

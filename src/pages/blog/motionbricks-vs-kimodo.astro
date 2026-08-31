@@ -1,0 +1,48 @@
+---
+export const title = "MotionBricks vs Kimodo: real-time runtime or offline generation? — MotionBricks.wiki";
+export const description = "NVIDIA ships two motion-generation projects that keep getting confused. MotionBricks runs live at runtime; Kimodo is described by NVIDIA's own README as an offline sibling. Here is the honest, source-checked split.";
+const slug = "motionbricks-vs-kimodo";
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, RELATED, GIFS } from "../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`}
+  crumbs={[{ label: "News", href: "/news/" }, { label: "MotionBricks vs Kimodo", href: `/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Comparison · unofficial community guide</p>
+      <h1>MotionBricks vs Kimodo: <span style="color:var(--accent)">when you need live motion, and when you don't</span></h1>
+      <p class="lede">Both projects come out of NVIDIA and both generate humanoid motion, so posts cross the names constantly. The README of MotionBricks settles the relationship in one line — and it is a division of labor, not a competition.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>What the official README actually says</h2>
+    <p>In the Related Work section of the <a href={OFFICIAL.repo} rel="noopener">MotionBricks README</a>, Kimodo gets exactly one sentence: <em>“A sibling project focused on offline motion generation, complementary to MotionBricks' real-time runtime.”</em> That is the entire official characterization inside the MotionBricks repo — sibling, offline, complementary. Anything more specific about Kimodo belongs on <a href={RELATED.kimodoPage} rel="noopener">its own project page</a> or <a href={RELATED.kimodoRepo} rel="noopener">its GitHub repository</a>, and we deliberately do not import numbers from there into this comparison.</p>
+    <figure style="max-width:560px">
+      <img src={GIFS.kimodoTeaser} alt="Kimodo teaser GIF, published in the Related Work section of the MotionBricks README" loading="lazy" width="480" height="270" />
+      <figcaption>Kimodo teaser — hosted in NVIDIA's repo and linked, not mirrored.</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>The axis that matters: when the motion is made</h2>
+    <p>MotionBricks generates motion <strong>at runtime, while you interact with it</strong>. In the shipped interactive demo you steer a Unitree G1 with WASD plus eleven style keys, and the model synthesizes the next frames as the keys change — the official project page states 15,000 FPS generation at 2 ms latency. The whole design (latent backbone plus smart primitives) exists to make that loop cheap enough to run live, for animation rigs and for robots that receive commands continuously.</p>
+    <p>Kimodo sits on the other side of that line. “Offline” in NVIDIA's wording means the motion is produced ahead of time, not under a live input stream — the classic bake-then-use workflow, where output quality matters more than response time. Read <a href={RELATED.kimodoPage} rel="noopener">the Kimodo project page</a> for what it does well; this article only fixes the boundary.</p>
+    <table>
+      <thead><tr><th>Dimension</th><th>MotionBricks</th><th>Kimodo</th></tr></thead>
+      <tbody>
+        <tr><td>Timing of generation</td><td>Runtime, interactive</td><td>Offline, ahead of use</td></tr>
+        <tr><td>Latency pressure</td><td>Millisecond budget; official figure is 2 ms</td><td>No live interaction loop to satisfy</td></tr>
+        <tr><td>Official relation</td><td>—</td><td>Called a sibling project, complementary, in MotionBricks' README</td></tr>
+        <tr><td>Where it ships</td><td><a href={OFFICIAL.repo} rel="noopener">GR00T-WholeBodyControl monorepo</a> (preview)</td><td>Its own <a href={RELATED.kimodoRepo} rel="noopener">GitHub repository</a></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block wrap">
+    <h2>Which one should you reach for</h2>
+    <p>If the motion has to react to something that is not known yet — a player pressing keys, a robot correcting its path, a character changing gait mid-stride — the offline route costs you the responsiveness, and that is the problem MotionBricks was built for. The <a href="/setup/">setup guide</a> here walks through running the interactive G1 demo yourself; twenty minutes with the keyboard usually makes the runtime/offline distinction intuitive.</p>
+    <p>If you are filling a timeline with finished animation and nothing changes after export, “offline” is not an insult — it is the right constraint, and bake-then-import is a normal pipeline, including the one sketched on our <a href="/unity/">Unity bridge page</a>. The wrong move is either project used against its own design intent.</p>
+    <div class="note">One habit worth keeping: <a href="/">this site</a> links every number to the page that states it. Community threads merge the two projects' claims into one mythical model. The <a href={OFFICIAL.projectPage} rel="noopener">MotionBricks project page</a> and the <a href={RELATED.kimodoPage} rel="noopener">Kimodo project page</a> are two different documents.</div>
+  </section>
+</Base>

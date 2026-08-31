@@ -1,0 +1,47 @@
+---
+export const title = "Smart primitives explained: the control surface under MotionBricks — MotionBricks.wiki";
+export const description = "Locomotion as velocity, heading and style; objects as proxy keyframes the backbone completes; setup authored end-to-end in UE5. What 'smart primitive' means in NVIDIA's own material, minus the marketing.";
+const slug = "smart-primitives-explained";
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, GIFS, KEYBINDS_STYLE } from "../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`}
+  crumbs={[{ label: "News", href: "/news/" }, { label: "Smart primitives", href: `/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Concept guide · SIGGRAPH 2026</p>
+      <h1>Smart primitives: <span style="color:var(--accent)">the second half of MotionBricks' name</span></h1>
+      <p class="lede">The paper title pairs a “modular latent generative model” with “smart primitives.” The backbone gets the headlines — 15,000 FPS, 350,000 clips — but the primitives are what a user or engineer actually touches. This page explains each family as the official material describes it.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Locomotion: three inputs, no per-task training</h2>
+    <p>The locomotion primitive takes continuous commands — velocity, heading, and a style signal — and the backbone renders them into full-body motion. There is no clip per combination: you are not selecting “walk-forward-zombie,” you are setting dials and the model synthesizes. That is where zero-shot composition shows up in practice; adding a movement flavor does not require training a dedicated model for it.</p>
+    <p>The interactive demo makes the idea tangible. WASD sets direction and speed relative to the camera; each style key layers a character onto the same locomotion stream — <strong>11 styles in the shipped build</strong>:</p>
+    <table>
+      <thead><tr><th>Key</th><th>Style</th></tr></thead>
+      <tbody>{KEYBINDS_STYLE.map(([k, s]) => <tr><td><span class="kbd">{k}</span></td><td>{s}</td></tr>)}</tbody>
+    </table>
+    <div class="gifgrid">
+      <figure><img src={GIFS.locoZombie} alt="Zombie-walk locomotion style generated live from velocity, heading and style inputs" loading="lazy" width="480" height="270" /><figcaption>Zombie walk — same locomotion primitive, different style input.</figcaption></figure>
+      <figure><img src={GIFS.locoCrouchStrafing} alt="Crouched strafing locomotion blending direction and style without authored transitions" loading="lazy" width="480" height="270" /><figcaption>Crouch strafing — blended direction and style, no authored transition.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Objects: proxy keyframes the backbone fills in</h2>
+    <p>Object interaction works differently. The author supplies <strong>proxy keyframes</strong> — a rough specification of the interaction, like where a hand should meet a sword or where a bench sits relative to a jump — and the backbone synthesizes the surrounding motion: the approach, the contact, the follow-through. Because those segments are generated rather than played back, repeated runs vary naturally instead of replaying one baked take. The official GIF gallery shows the family: pick up sword, jump over bench, sitting, falling.</p>
+    <p>Worth stating plainly, since the <a href="/ue5/">UE5 page</a> gets asked this weekly: there is no collision solver underneath. Contact behavior is learned into the motion, which is exactly why the material claims no foot-locking, no blending, no collision detection and no hand-authored transitions. If your project needs simulated physics response, this is a motion generator, not a physics engine.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Setup: authoring end-to-end inside UE5</h2>
+    <p>The third leg in the official material is the authoring workflow: NVIDIA's Smart Primitive Setup section describes setting primitives up inside Unreal Engine 5 itself — placing proxy keyframes on scene objects and wiring the behavior without leaving the editor, which is how the 2:40 one-take demo was assembled. No public UE5 plugin ships in the preview, so today you can read about it on the <a href={OFFICIAL.projectPage} rel="noopener">project page</a> and run the model layer via the <a href="/setup/">Python setup guide</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>The state-machine question (our opinion, labeled)</h2>
+    <p><em>Opinion, not official:</em> read together, the three families sketch an alternative to the animation blueprint state machine. Instead of authoring states and transition rules between every pair, you expose a low-dimensional command surface and let one trained model occupy the space — the “blending graph” moves from the game project into the checkpoint. That reframing is ours; the paper's own pitch is scalability and real-time control. Run the demo, press <span class="kbd">F</span> into a zombie walk while strafing, and judge the analogy yourself. The controls are listed on the <a href="/g1-demo/">G1 demo page</a>, and <a href="/">the home page</a> maps the rest of the framework.</p>
+  </section>
+</Base>

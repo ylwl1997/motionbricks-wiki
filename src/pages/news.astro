@@ -1,0 +1,59 @@
+---
+import Base from "../layouts/Base.astro";
+import { OFFICIAL, NEWS_TIMELINE } from "../data/site.js";
+// Blog posts registry — single source for /news/. Add new posts here.
+const posts = [
+  { slug: "what-350000-15000-actually-mean", title: "What \u201c350,000 / 15,000\u201d actually mean in MotionBricks posts", desc: "The two numbers every viral post quotes come from different axes of one sentence. Here is the official wording, decoded.", tag: "Explainer", date: "2026-08-30" },
+  { slug: "motionbricks-vs-kimodo", title: "MotionBricks vs Kimodo: real-time and offline generation are different jobs", desc: "NVIDIA ships two sibling motion models that look interchangeable until you check what each optimizes for.", tag: "Comparison", date: "2026-08-29" },
+  { slug: "smart-primitives-explained", title: "Smart primitives explained: what replaces the animation blueprint?", desc: "Velocity, heading, style, proxy keyframes — the interface that lets one model author navigation and object contact.", tag: "Concept", date: "2026-08-28" },
+  { slug: "motionbricks-at-siggraph-2026", title: "MotionBricks at SIGGRAPH 2026: what the paper actually claims", desc: "TOG '26, DOI, 16 authors, and a line-by-line look at the headline figures — with the official citations attached.", tag: "Paper", date: "2026-08-27" },
+  { slug: "nvidias-humanoid-motion-stack", title: "NVIDIA's humanoid motion stack: where GR00T WBC, SONIC and MotionBricks fit", desc: "A map of the pieces (and the three SONIC checkpoints, with the lookahead caveat everyone skips).", tag: "Analysis", date: "2026-08-26" },
+  { slug: "bones-seed-dataset", title: "BONES-SEED: the 142,220-clip mocap dataset behind MotionBricks", desc: "What the training corpus actually contains, and how to pull it — the official pages, not the rumors.", tag: "Data", date: "2026-08-25" },
+];
+const { title, description } = {
+  title: "MotionBricks news & guides index — releases, paper notes, dataset tips | MotionBricks.wiki",
+  description: "Release timeline of NVIDIA MotionBricks and the GR00T-WholeBodyControl stack, plus starter guides: what the numbers mean, BONES-SEED data, UE5 and Unity status.",
+};
+---
+<Base {title} {description} path="/news/" crumbs={[{ label: "News", href: "/news/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">News & long reads</p>
+      <h1>Everything new around <span style="color:var(--accent)">MotionBricks</span>, sourced and dated</h1>
+      <p class="lede">Release notes pulled from the official README timeline, plus the guides that take a fact and follow it to its end. Searches like "motionbricks shipped to siggraph 2026" land here first.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Official release timeline</h2>
+    <table>
+      <thead><tr><th>Date</th><th>What shipped</th></tr></thead>
+      <tbody>
+        {NEWS_TIMELINE.map(([d, t]) => <tr><td><code>{d}</code></td><td>{t}</td></tr>)}
+      </tbody>
+    </table>
+    <p style="color:var(--ink-2);font-size:13.5px">Dates and wording per the <a href={OFFICIAL.parentRepo} rel="noopener">GR00T-WholeBodyControl README</a>. The full training pipeline release, targeted approximately one month out from the 2026-04-27 preview, is tracked in that roadmap.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Guides & analysis</h2>
+    <div class="post-list">
+      {posts.map((p) => (
+        <article class="post-item">
+          <h3><a href={`/blog/${p.slug}/`}>{p.title}</a><span class="tag">{p.tag}</span></h3>
+          <p style="color:var(--ink-2);margin:6px 0 4px">{p.desc}</p>
+          <p class="meta">{p.date} · MotionBricks.wiki editorial (unofficial)</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Hands-on starting points</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/setup/">Set it up</a></h3><p>Nine commands to a running G1 demo, LFS traps annotated.</p></div>
+      <div class="card"><h3><a href="/g1-demo/">Drive the demo</a></h3><p>15 keys, 11 styles, camera tricks.</p></div>
+      <div class="card"><h3><a href="/assets/">Official media index</a></h3><p>Every teaser GIF and the 4K demo, original URLs only.</p></div>
+    </div>
+  </section>
+</Base>

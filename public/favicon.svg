@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#0b0d10"/>
+  <!-- two offset "bricks": green + amber, the site's accent pair -->
+  <rect x="10" y="12" width="30" height="16" rx="3" fill="#76b900"/>
+  <rect x="24" y="34" width="30" height="16" rx="3" fill="#f2b134"/>
+</svg>

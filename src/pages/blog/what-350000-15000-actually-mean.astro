@@ -1,0 +1,54 @@
+---
+export const title = "What 350,000 and 15,000 actually mean in MotionBricks posts — MotionBricks.wiki";
+export const description = "Two viral numbers keep getting misread: 15,000 FPS is synthesis throughput, not a refresh rate, and 350,000 is a clip count, not a dataset name. Plus the '5,000 FPS' copy-paste error. One official sentence settles all three.";
+const slug = "what-350000-15000-actually-mean";
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, GIFS, CORRECTION_5K, CORRECTION_350K_15K, HEADLINE_STATS } from "../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`}
+  crumbs={[{ label: "News", href: "/news/" }, { label: "350K / 15K, decoded", href: `/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Myth check · viral numbers</p>
+      <h1>What 350,000 and 15,000 <span style="color:var(--accent)">actually mean</span></h1>
+      <p class="lede">MotionBricks threads live and die by two numbers, and most posts repeat them wrong. There is exactly one authoritative sentence to quote. Everything else on this page unpacks it.</p>
+      <p class="warn" style="margin-top:18px">{CORRECTION_5K}</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>The one sentence everything traces back to</h2>
+    <div class="note" style="font-size:1.05rem"><em>“MotionBricks achieves 15000 FPS and 2 ms latency covering over 350,000 motion skills by a single neural backbone.”</em> — official project page, <a href={OFFICIAL.projectPage} rel="noopener">nvlabs.github.io/motionbricks</a></div>
+    <p>Subject, verb, object. One model, generating motion, fast, over a large clip corpus. Every correct reading is a parsing of this sentence; every viral misreading drops one of its pieces.</p>
+    <div class="stats">
+      {HEADLINE_STATS.map((s) => (
+        <div class="stat"><span class="v">{s.v}</span><span class="u">{s.unit}</span><div class="n">{s.note}</div></div>
+      ))}
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>15,000 FPS: what it counts</h2>
+    <p>{CORRECTION_350K_15K}</p>
+    <p>Unpacked: FPS here is frames <em>the model generates per second of wall-clock time</em>, not frames a display shows. A G1 humanoid animated by MotionBricks does not run at 15,000 Hz — nothing renders at that rate. The number measures synthesis headroom: how much faster the generator produces motion than the 50 Hz-ish control loops and 30–60 fps displays that consume it, which is what makes interactive, zero-shot control feasible on a single CUDA GPU in the first place. The companion figure — 2 ms latency — is per the official project page.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>350,000: what it counts</h2>
+    <p>Also from the correction above: the 350,000+ is a count of motion clips in the training corpus — the <a href="/blog/bones-seed-dataset/">BONES-SEED collection</a> README describes as production-grade mocap from real actors — not the name or size of a dataset you can point a browser at, and not parameters, and not skills in some locked menu. “Over 350,000 motion skills by a single neural backbone” is the claim that one model <em>covers</em> that corpus, which is the scalability point the <a href={OFFICIAL.arxiv} rel="noopener">SIGGRAPH 2026 paper</a> spends its architecture sections earning.</p>
+    <figure style="max-width:560px">
+      <img src={GIFS.interactiveDemo} alt="Interactive demo screencast: G1 humanoid driven live by keyboard commands" loading="lazy" width="480" height="270" />
+      <figcaption>The consumer side: interactive control runs at keyboard speed, not 15,000 Hz — the FPS figure describes the generator behind it.</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>How to cite it without repeating the hype</h2>
+    <ul>
+      <li>Quote the full sentence (or link it) instead of the bare numbers; context-free “15,000 FPS!” is where the misreadings start — including the phantom “5,000 FPS” that <a href="/">this site's home page</a> already flags.</li>
+      <li>Keep throughput and latency as separate claims: frames per second is not milliseconds per frame, and the page states both for a reason.</li>
+      <li>Before quoting any other number you see circulating — a parameter count, a benchmark score — check whether it appears in the <a href={OFFICIAL.paperPdf} rel="noopener">paper</a> or README. If it appears only in a reply thread, it probably was invented in a reply thread.</li>
+    </ul>
+    <p>Then go measure the claim yourself: the <a href="/setup/">setup guide</a> gets the interactive demo running, and the <a href="/g1-demo/">G1 controls page</a> lists every key. Two milliseconds is hard to see, but zero-shot style-switching mid-stride is obvious the moment you press <span class="kbd">F</span>.</p>
+  </section>
+</Base>

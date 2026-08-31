@@ -1,0 +1,50 @@
+---
+export const title = "The MotionBricks SIGGRAPH 2026 paper: every official claim, linked — MotionBricks.wiki";
+export const description = "A reading card for 'MotionBricks: Scalable Real-Time Motions with Modular Latent Generative Model and Smart Primitives' — ACM TOG / SIGGRAPH 2026, DOI, arXiv, 16 authors, and exactly what the numbers claim.";
+const slug = "motionbricks-at-siggraph-2026";
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, GIFS } from "../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`}
+  crumbs={[{ label: "News", href: "/news/" }, { label: "SIGGRAPH 2026 paper", href: `/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Paper card · SIGGRAPH 2026</p>
+      <h1>The MotionBricks paper, <span style="color:var(--accent)">read carefully</span></h1>
+      <p class="lede">“MotionBricks: Scalable Real-Time Motions with Modular Latent Generative Model and Smart Primitives” — the document behind every number floating around the community. Here are its identifiers, its authors, and a plain list of what it actually claims.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Where to find it</h2>
+    <ul>
+      <li>Published in ACM Transactions on Graphics, tied to <strong>SIGGRAPH 2026</strong>; DOI: <a href={OFFICIAL.doi} rel="noopener">10.1145/3811334</a></li>
+      <li>Preprint on arXiv: <a href={OFFICIAL.arxiv} rel="noopener">arXiv:2604.24833</a> (cs.RO)</li>
+      <li>Official PDF from NVIDIA's GEAR lab: <a href={OFFICIAL.paperPdf} rel="noopener">motionbricks_siggraph_2026.pdf</a></li>
+      <li>Project page with demos: <a href={OFFICIAL.projectPage} rel="noopener">nvlabs.github.io/motionbricks</a></li>
+    </ul>
+    <p>The author list runs sixteen names, led by first author Tingwu Wang, listed as the corresponding author on the <a href={OFFICIAL.arxiv} rel="noopener">arXiv abstract page</a>. The bibtex key in the repository's citation block (<code>wang2026motionbricksscalablerealtimemotions</code>) matches; cite the paper, not a screenshot.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>What the authors claim — itemized</h2>
+    <ul>
+      <li><strong>15,000 FPS generation throughput at 2 ms latency</strong>, stated verbatim on the official project page: <em>“MotionBricks achieves 15000 FPS and 2 ms latency covering over 350,000 motion skills by a single neural backbone.”</em></li>
+      <li><strong>Over 350,000 motion clips covered by one backbone</strong> — a modular latent generative model (VQVAE tokenizer plus pose and root models), not an ensemble of per-task networks.</li>
+      <li><strong>Zero-shot synthesis</strong> — motions are composed from the trained latent space without per-task training for each new command combination.</li>
+      <li><strong>Smart primitives</strong> as the control surface: locomotion driven by velocity, heading and style inputs; objects driven by proxy keyframes the backbone completes.</li>
+      <li>The official demo material states the runtime needs <strong>no foot-locking, no blending, no collision detection, and no hand-authored transitions</strong>.</li>
+      <li><strong>“First” claims are author self-assessments.</strong> The project page frames the UE5-scale demo as, <em>to the authors' knowledge</em>, the first neural model combining that quality, controllability, complexity and completeness. Treat the qualifier as part of the claim.</li>
+    </ul>
+    <figure style="max-width:560px">
+      <img src={GIFS.teaserAnimation} alt="MotionBricks animation teaser from the official README GIF gallery" loading="lazy" width="640" height="360" />
+      <figcaption>Animation teaser from the README gallery — figures the paper walks through.</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>How the paper and the code relate</h2>
+    <p>The 2026-04-27 public release is a <strong>preview</strong>: interactive MuJoCo demo, pretrained checkpoints, synthetic training code. The README's roadmap commits the full pipeline — the model embedded in GR00T Whole-Body Control's robotics formulation — roughly one month out from that preview. If a reviewer asks “can I reproduce Table N?”, the honest answer today is the one on the repository's News section, and you should link to it rather than guess.</p>
+    <p>Want the numbers checked against the hype anyway? The <a href="/blog/what-350000-15000-actually-mean/">correction post on 350,000 and 15,000</a> covers the two misreads that circulate most. To run the system behind the paper locally, start with the <a href="/setup/">setup guide</a> and the <a href="/">home page's</a> explainer of what the framework does.</p>
+  </section>
+</Base>

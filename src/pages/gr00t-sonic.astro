@@ -1,0 +1,88 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import {
+  OFFICIAL, RELATED, GIFS,
+  SONIC_MODELS, SONIC_COMMON, SONIC_CAVEAT, NEWS_TIMELINE,
+} from "../data/site.js";
+
+// SONIC-related entries from the parent-repo news feed (verbatim rows from site.js).
+const sonicNews = NEWS_TIMELINE.filter(([_, text]) =>
+  /SONIC|VLA|teleop/i.test(text));
+
+const faqItems = [
+  { q: "What is SONIC in relation to MotionBricks?", a: "SONIC (released as GEAR-SONIC) is NVIDIA's whole-body-control controller for the Unitree G1, shipped in the same GR00T-WholeBodyControl repository as MotionBricks. The README's Related Work section states that GEAR-SONIC and MotionBricks together anchor NVIDIA's GR00T Whole-Body Control initiative: MotionBricks generates the motion, SONIC tracks and executes it on the robot." },
+  { q: "Which SONIC checkpoint should I use?", a: "The original Default SONIC for general motion tracking, planning, teleoperation and compatibility with existing deployments; the low-latency checkpoint (4-frame, ~80 ms reference lookahead) for responsive teleop and VLA execution; SONIC v1.1 (robot-heading-normalized target orientation, wrist-pose augmentation) for heading-stable teleoperation. All three live in the nvidia/GEAR-SONIC Hugging Face repository." },
+  { q: "Does the 80 ms lookahead number mean 80 ms of total teleoperation latency?", a: "No, and the model card says so explicitly: the lookahead values describe the reference horizon presented to the controller, not end-to-end latency, which also includes sensing, networking, preprocessing, and inference. Any post quoting SONIC 'latency' from the lookahead table is misreading it." },
+];
+---
+<Base
+  title="MotionBricks & SONIC (GEAR-SONIC): the GR00T whole-body control pair | MotionBricks.wiki"
+  description="How SONIC fits next to MotionBricks in NVIDIA's GR00T Whole-Body Control effort: the three GEAR-SONIC checkpoints and their lookahead values, the 64-dim latent tokens at 50 Hz, HF download locations, and the honest caveat about what lookahead does not mean."
+  path="/gr00t-sonic/"
+  crumbs={[{ label: "SONIC", href: "/gr00t-sonic/" }]}
+  ogImage={GIFS.sonicTeaser}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">The robot side of the stack · facts from the GR00T-WBC model card</p>
+      <h1>SONIC: where <span style="color:var(--accent)">MotionBricks motion</span> meets a real G1</h1>
+      <p class="lede">MotionBricks answers "what should this character do next?". GEAR-SONIC answers "make a 30 kg robot actually do it". Both ship inside the same repository, and the README is explicit that they anchor NVIDIA's GR00T Whole-Body Control plan together.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>How the two projects relate</h2>
+    <p>The README's Related Work section states it in one sentence: <em>"Together with MotionBricks, GEAR-SONIC anchors NVIDIA's GR00T Whole-Body Control initiative."</em> In practice that means one shared monorepo (<a href={OFFICIAL.parentRepo} rel="noopener">NVlabs/GR00T-WholeBodyControl</a>), MotionBricks as the motion-generation layer (<a href="/architecture/">how the latent models work</a>), and SONIC as the tracking controller that turns reference motion into motor behaviour on the Unitree G1.</p>
+    <figure style="max-width:520px">
+      <img src={GIFS.sonicTeaser} alt="GEAR-SONIC teaser: the Unitree G1 executing whole-body motion tracked by the SONIC controller" loading="lazy" width="480" height="270" />
+      <figcaption>Official GEAR-SONIC teaser GIF from the shared assets folder. <a href={GIFS.sonicTeaser} rel="noopener">Open original</a></figcaption>
+    </figure>
+    <p>Official SONIC sources: <a href={RELATED.sonicPage} rel="noopener">project page</a> · <a href="https://huggingface.co/nvidia/GEAR-SONIC" rel="noopener">nvidia/GEAR-SONIC on Hugging Face</a> · <a href={OFFICIAL.parentRepo} rel="noopener">parent repo</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>The three checkpoints</h2>
+    <p>Verbatim from the GR00T-WBC model card — every checkpoint is in the <code>nvidia/GEAR-SONIC</code> Hugging Face repo:</p>
+    <table>
+      <thead><tr><th>Checkpoint</th><th>Reference lookahead</th><th>Intended use</th><th>Download</th></tr></thead>
+      <tbody>
+        {SONIC_MODELS.map((m) => (
+          <tr>
+            <td><strong>{m.name}</strong></td>
+            <td>{m.lookahead}</td>
+            <td>{m.use}</td>
+            <td>{m.link
+              ? <a href={m.link} rel="noopener">nvidia/GEAR-SONIC · {m.link.split("/tree/main/")[1]}</a>
+              : <a href="https://huggingface.co/nvidia/GEAR-SONIC" rel="noopener">nvidia/GEAR-SONIC · main</a>}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <div class="note"><strong>Shared specs:</strong> {SONIC_COMMON}</div>
+    <div class="warn"><strong>Caveat, in the model card's own words:</strong> {SONIC_CAVEAT}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>SONIC in the release timeline</h2>
+    <p>The parent repo's news feed, SONIC-relevant entries only (full feed on <a href="/news/">the news page</a>):</p>
+    <ul>
+      {sonicNews.map(([date, text]) => (
+        <li><strong>{date}</strong> — {text}</li>
+      ))}
+    </ul>
+    <p style="color:var(--ink-2)">MotionBricks' own 2026-04-27 preview release is the starting point of the combined story; the checkpoint rows above are what arrived on the SONIC side afterwards.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Where to read next</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/nvidia/">MotionBricks vs NVIDIA's stack</a></h3><p>How the pieces of GR00T (and what is NOT part of it) sort out.</p></div>
+      <div class="card"><h3><a href="/architecture/">Architecture</a></h3><p>The VQVAE / pose / root models on the generation side of the pair.</p></div>
+      <div class="card"><h3><a href="/news/">News timeline</a></h3><p>Every dated entry from both READMEs, with sources.</p></div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="SONIC FAQ" />
+  </div>
+</Base>

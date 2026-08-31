@@ -1,0 +1,70 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, GIFS } from "../data/site.js";
+const faqItems = [
+  { q: "Does MotionBricks work for Unity?", a: "Not officially, at time of writing. The released runtimes are Python-based: an interactive MuJoCo demo for the G1 robot plus training code in the GR00T-WholeBodyControl repository, while the public showcase runs inside Unreal Engine 5. No Unity plugin, package or sample has been published by NVIDIA, and the roadmap announces only a fuller release of the existing stack, not a Unity binding." },
+  { q: "How could I use MotionBricks motion inside a Unity game anyway?", a: "Treat the model as an external motion source. Two pragmatic bridges: (1) offline — generate animation in the Python stack, export curves or retargetable clips, import them as AnimationClips; (2) runtime — wrap the model in a small service emitting pose streams over a socket and drive Unity animation (Animator or a job-burst skeleton writer) from the frames. Both are DIY: you own the transport, retargeting and the networking cost, and neither is supported by NVIDIA." },
+  { q: "Is motion bricks nvidia in unity covered by official support if I buy an Enterprise license?", a: "There is no Unity support at any tier in the public materials. NVIDIA Open Model License concerns use of the weights, not engine integration services. If a Unity path matters to your project, watch the official repository releases rather than third-party claims." },
+];
+---
+<Base
+  title="Does MotionBricks work in Unity? The honest answer — MotionBricks.wiki"
+  description="No official Unity support exists for NVIDIA's MotionBricks — the runtimes are MuJoCo (Python) and the demo is UE5. Here are the realistic bridge paths for Unity developers, and what each one costs you."
+  path="/unity/"
+  crumbs={[{ label: "Unity", href: "/unity/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Compatibility guide · no sugarcoating</p>
+      <h1>MotionBricks and Unity: <span style="color:var(--accent)">there is no official path — yet</span></h1>
+      <p class="lede">If you searched "does motion bricks work for unity", the truthful answer is not in NVIDIA's public materials at all. This page says so plainly, then maps the bridge options you'd actually build — and what each costs.</p>
+      <p style="margin-top:20px"><span class="unofficial-tag">Last checked against the repository: preview release of 2026-04-27 + roadmap</span></p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>What officially exists today</h2>
+    <table>
+      <thead><tr><th>Surface</th><th>Status</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Python runtime + interactive <strong>MuJoCo G1 demo</strong></td><td>Released (preview)</td><td><a href={OFFICIAL.repo} rel="noopener">GitHub monorepo</a></td></tr>
+        <tr><td>Synthetic <strong>training pipeline</strong> (VQVAE / pose / root)</td><td>Released (preview)</td><td>Same repo, <code>scripts/</code></td></tr>
+        <tr><td><strong>UE5 authoring showcase</strong></td><td>Video + paper only; no plugin</td><td><a href={OFFICIAL.projectPage} rel="noopener">Project page</a></td></tr>
+        <tr><td><strong>Unity plugin / package / sample</strong></td><td>Does not exist</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="warn"><strong>Why this page matters:</strong> third-party repos titled like a Unity integration have circulated for every hot NVIDIA model. Nothing links from NVIDIA's official pages to any Unity package. Until the repository itself ships one, treat such claims as unsupported.</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Bridge options, ranked by effort</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>1 · Offline bake</h3>
+        <p>Generate motion with the Python stack, export as curves/retargetable clips, import as AnimationClips. Hours of work; no live responsiveness. Good for cutscenes and prototype animation.</p>
+      </div>
+      <div class="card">
+        <h3>2 · Runtime bridge service</h3>
+        <p>Wrap inference in a local service; push pose frames over a socket into Unity (Animator or a burst skeleton writer). Days to weeks; you own latency budget and retargeting to your rig.</p>
+      </div>
+      <div class="card">
+        <h3>3 · Wait for the full release</h3>
+        <p>The roadmap commits to the complete training pipeline and GR00T-WBC robotics embedding (~one month from preview, per README). Engine bindings remain unspecified — watching the repo is free.</p>
+      </div>
+    </div>
+    <p>The MuJoCo demo is still the best hands-on preview of what the runtime can do before you commit engineering time — see the <a href="/setup/">setup guide</a> and <a href="/g1-demo/">controls</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>What the model does not care about</h2>
+    <p>MotionBricks output is joint-level motion (root trajectory + pose frames), so it is engine-agnostic by nature. Every bridge above is plumbing, not research — which is exactly why nobody has released an official Unity integration yet: the released runtime targets robotics (G1) and the UE5 showcase was an in-house production experiment.</p>
+    <figure style="max-width:560px">
+      <img src={GIFS.locoFreestyle} alt="Freestyle mix of locomotion styles generated by MotionBricks" loading="lazy" width="480" height="270" />
+      <figcaption>Any bridge must deliver motion this fluid in-engine — the GIFs above are from the official README gallery.</figcaption>
+    </figure>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Unity FAQ" />
+  </div>
+</Base>

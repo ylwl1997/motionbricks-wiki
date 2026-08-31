@@ -1,0 +1,47 @@
+---
+import Base from "../layouts/Base.astro";
+import { OFFICIAL, GIFS } from "../data/site.js";
+---
+<Base
+  title="MotionBricks explicado en español: guía no oficial de NVIDIA | MotionBricks.wiki"
+  description="Guía comunitaria no oficial sobre MotionBricks (NVIDIA): generación de movimiento en tiempo real, smart primitives, instalación y límites honestos. Fuentes oficiales enlazadas en cada dato."
+  path="/es/"
+  lang="es"
+  crumbs={[{ label: "Español", href: "/es/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Guía comunitaria no oficial · SIGGRAPH 2026</p>
+      <h1>MotionBricks: el modelo de movimiento en tiempo real de NVIDIA, <span style="color:var(--accent)">en español</span></h1>
+      <p class="lede">MotionBricks genera animación humana y movimiento de robots en directo, en lugar de reproducir clips preautorados. Esta es una guía no oficial: cada cifra enlaza a la página oficial que la afirma. El sitio completo está en inglés; esta página resume lo esencial y te lleva a las guías.</p>
+      <div class="stats">
+        <div class="stat"><span class="v">15,000</span><span class="u">FPS</span><div class="n">capacidad de generación por segundo (la página oficial dice 15000 FPS)</div></div>
+        <div class="stat"><span class="v">2</span><span class="u">ms</span><div class="n">latencia según la página oficial del proyecto</div></div>
+        <div class="stat"><span class="v">350,000+</span><span class="u">clips</span><div class="n">clips de movimiento cubiertos por un único backbone neural</div></div>
+      </div>
+      <p style="margin-top:20px"><a class="btn" href="/setup/">Instalar MotionBricks (guía en inglés, comandos copiables)</a></p>
+      <p class="warn" style="margin-top:18px">Muchos hilos de la comunidad repiten una cifra de «5.000 FPS». Es incorrecta: la página oficial y el README dicen 15,000 FPS / 15000 FPS. Cita el artículo original, no el hilo que exagera.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Qué es, en tres párrafos</h2>
+    <p><strong>El modelo.</strong> Un backbone latente modular (tokenizador VQVAE más modelos de pose y de raíz) que cubre más de 350.000 clips de movimiento en un único modelo, presentado en SIGGRAPH 2026 (ACM Transactions on Graphics). Detalles y PDF en la <a href={OFFICIAL.projectPage} rel="noopener">página oficial del proyecto</a> y el <a href={OFFICIAL.arxiv} rel="noopener">arXiv</a>.</p>
+    <p><strong>La interfaz.</strong> Las «smart primitives»: locomoción controlada por velocidad, dirección y estilo; objetos definidos por fotogramas proxy que el modelo completa. Sin máquina de estados ni transiciones escritas a mano, según el material oficial.</p>
+    <p><strong>El estado real.</strong> La vista previa pública (2026-04-27) incluye una demo interactiva en MuJoCo con el robot G1, checkpoints entrenados y código de entrenamiento en <a href={OFFICIAL.repo} rel="noopener">GitHub</a>. No existe plugin oficial para Unity ni UE5 todavía; la hoja de ruta apunta a una liberación completa unas semanas después de la vista previa.</p>
+    <figure style="max-width:560px">
+      <img src={GIFS.locoFreestyle} alt="Mezcla de estilos de locomoción generados en tiempo real por MotionBricks" loading="lazy" width="480" height="270" />
+      <figcaption>GIF oficial del README de MotionBricks, alojado por NVIDIA.</figcaption>
+    </figure>
+  </section>
+
+  <section class="block wrap">
+    <h2>Por dónde seguir</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/setup/">Instalación</a></h3><p>Clone con Git LFS, descarga de los checkpoints (~2,2 GB) y la trampa de los archivos puntero de 1 KB.</p></div>
+      <div class="card"><h3><a href="/g1-demo/">Demo G1</a></h3><p>Las 15 teclas de control y las limitaciones conocidas.</p></div>
+      <div class="card"><h3><a href="/blog/what-350000-15000-actually-mean/">Los números, explicados</a></h3><p>Qué significa de verdad «15.000 FPS» y «350.000 clips» — y qué es ruido de hilo viral.</p></div>
+      <div class="card"><h3><a href="/">Sitio completo (inglés)</a></h3><p>Arquitectura, estilos, UE5, Unity, pila GR00T/SONIC y noticias.</p></div>
+    </div>
+    <p>¿Errata o sugerencia de traducción? La fuente de verdad siempre es el repositorio oficial; el contacto público del proyecto es <a href={OFFICIAL.projectPage} rel="noopener">el de su página</a>.</p>
+  </section>
+</Base>

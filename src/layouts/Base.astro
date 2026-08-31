@@ -1,0 +1,106 @@
+---
+// Global layout: SEO head, hreflang, GA4 placeholder, breadcrumb, nav, legal footer.
+interface Props {
+  title: string;
+  description: string;
+  path: string;              // canonical path e.g. "/setup/"
+  crumbs?: { label: string; href: string }[];
+  lang?: string;             // "en" | "es" | "ja"
+  ogImage?: string;
+}
+const {
+  title, description, path, crumbs = [], lang = "en",
+  ogImage = "https://nvlabs.github.io/motionbricks/static/images/teaser_image_motionbricks.jpg",
+} = Astro.props;
+const canon = `https://motionbricks.wiki${path}`;
+const nav = [
+  { href: "/setup/", label: "Setup" },
+  { href: "/g1-demo/", label: "G1 demo" },
+  { href: "/ue5/", label: "UE5" },
+  { href: "/unity/", label: "Unity" },
+  { href: "/architecture/", label: "Architecture" },
+  { href: "/styles/", label: "Styles" },
+  { href: "/gr00t-sonic/", label: "SONIC" },
+  { href: "/news/", label: "News" },
+];
+---
+<!doctype html>
+<html lang={lang}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canon} />
+  <link rel="alternate" hreflang="en" href={`https://motionbricks.wiki${path === "/es/" || path === "/ja/" ? "/" : path}`} />
+  {path === "/" && <>
+    <link rel="alternate" hreflang="es" href="https://motionbricks.wiki/es/" />
+    <link rel="alternate" hreflang="ja" href="https://motionbricks.wiki/ja/" />
+  </>}
+  <link rel="alternate" hreflang="x-default" href="https://motionbricks.wiki/" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canon} />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content={ogImage} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" as="style" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" />
+  <link rel="stylesheet" href="/styles/global.css" />
+  <!-- GA4: placeholder — webmaster fills the real measurement ID after creating the property -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
+  <slot name="head" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap">
+      <a class="logo" href="/">Motion<span class="b">Bricks</span>.wiki</a>
+      <nav class="nav" aria-label="Main">
+        {nav.map((n) => <a href={n.href} aria-current={Astro.url.pathname === n.href ? "page" : undefined}>{n.label}</a>)}
+      </nav>
+      <div class="lang-switch" aria-label="Language">
+        <a href="/" hreflang="en">EN</a>
+        <a href="/es/" hreflang="es">ES</a>
+        <a href="/ja/" hreflang="ja">日本語</a>
+      </div>
+    </div>
+  </header>
+
+  {crumbs.length > 0 && (
+    <nav class="crumbs wrap" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      {crumbs.map((c) => <><span>›</span><a href={c.href}>{c.label}</a></>)}
+    </nav>
+  )}
+
+  <main id="main">
+    <slot />
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <div class="foot-links">
+        <a href="/about/">About this site</a>
+        <a href="/community/">Community</a>
+        <a href="/news/">News</a>
+        <a href="/assets/">Official assets</a>
+        <a href={new URL("https://github.com/NVlabs/GR00T-WholeBodyControl")} rel="noopener">Official repo</a>
+      </div>
+      <p class="foot-legal">
+        Unofficial community guide — not affiliated with, endorsed by, or sponsored by NVIDIA.
+        MotionBricks™ and NVIDIA® are trademarks of NVIDIA Corporation.
+        Code facts sourced from the public MotionBricks README (Apache 2.0); model weights are covered by the NVIDIA Open Model License.
+        All demo media links to NVIDIA-hosted files; nothing is mirrored or re-hosted here.
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

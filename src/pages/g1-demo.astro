@@ -1,0 +1,62 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, GIFS, KEYBINDS_MOVE, KEYBINDS_STYLE, KEYBIND_NOTE, KEY_DEFAULT } from "../data/site.js";
+const faqItems = [
+  { q: "How do I run the MotionBricks G1 example / demo?", a: "After completing setup, run: DISPLAY=:1 python scripts/interactive_demo_g1.py from the motionbricks/ directory. The MuJoCo viewer opens with the Unitree G1; drive it with WASD for movement and letter keys for motion styles, and hold the left mouse button to steer the camera." },
+  { q: "Which keys control the G1 demo?", a: "WASD moves relative to the camera. Style keys: V slow walk, Z hand crawling, X walk boxing, B elbow crawling, R stealth walk, T injured walk, C crouched stealth walk, E happy dance walk, F zombie walk, G gun walk, Q scared walk. Without a style key the default is idle when no movement key is pressed and walk when WASD is pressed." },
+  { q: "Why does the crawling style not move sideways?", a: "It is a stated limitation, not a bug in your install: the crawling modes (Z hand crawling, B elbow crawling) currently do not support side-only directions in the preview release." },
+  { q: "The demo window opens but keys do nothing.", a: "On Linux keep the terminal focused rather than the MuJoCo window (the X11 key-grab workaround), and make sure python-xlib is installed. On Wayland, macOS or Windows some MuJoCo shortcuts conflict with the controller keys — same workaround, keep the terminal focused." },
+];
+---
+<Base
+  title="MotionBricks G1 demo: keyboard controls, styles, and first run | MotionBricks.wiki"
+  description="Run the interactive MotionBricks G1 example: the exact command, the full WASD + 11 style keybind table (zombie, crawling, boxing…), camera controls, and fixes when keyboard input does not land."
+  path="/g1-demo/"
+  crumbs={[{ label: "G1 demo", href: "/g1-demo/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Guide · controls verbatim from the README</p>
+      <h1>The interactive G1 demo, <span style="color:var(--accent)">key by key</span></h1>
+      <p class="lede">The fastest way to feel what a 15,000 FPS motion model means: a Unitree G1 in the MuJoCo viewer that answers your keyboard in real time. Prerequisite: a finished <a href="/setup/">setup</a> with real checkpoints (not 1 KB pointers).</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Launch</h2>
+    <pre class="code-block"><code>DISPLAY=:1 python scripts/interactive_demo_g1.py</code></pre>
+    <figure style="max-width:520px">
+      <img src={GIFS.interactiveDemo} alt="Screencast of the MotionBricks interactive demo: G1 humanoid responding to keyboard commands in the MuJoCo viewer" loading="lazy" width="480" height="270" />
+      <figcaption>Official demo screencast, hosted by NVIDIA.</figcaption>
+    </figure>
+    <p>Hold the left mouse button and drag to change the camera look-at direction; right-click-drag rotates the camera, which also rotates what WASD means (movement is camera-relative).</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Movement controls</h2>
+    <table>
+      <thead><tr><th>Key</th><th>Action</th></tr></thead>
+      <tbody>{KEYBINDS_MOVE.map(([k, a]) => <tr><td><span class="kbd">{k}</span></td><td>{a}</td></tr>)}</tbody>
+    </table>
+    <p>{KEY_DEFAULT}</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Motion styles (11 keys)</h2>
+    <p>Press a style key, then steer with WASD. Each style is generated zero-shot by the same model — no per-style switch in code:</p>
+    <table>
+      <thead><tr><th>Key</th><th>Style</th></tr></thead>
+      <tbody>{KEYBINDS_STYLE.map(([k, a]) => <tr><td><span class="kbd">{k}</span></td><td>{a}</td></tr>)}</tbody>
+    </table>
+    <div class="note"><strong>Stated limitation:</strong> {KEYBIND_NOTE}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>See the styles in motion</h2>
+    <p>The official gallery GIFs show what each style family looks like — <a href="/styles/">full style library index</a> or straight to <a href={OFFICIAL.projectPage} rel="noopener">the project page demos</a>.</p>
+  </section>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Demo FAQ" />
+  </div>
+</Base>

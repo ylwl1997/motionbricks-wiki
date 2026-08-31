@@ -1,0 +1,63 @@
+---
+import Base from "../layouts/Base.astro";
+import { OFFICIAL, NEWS_TIMELINE, CORRECTION_5K } from "../data/site.js";
+---
+<Base
+  title="About MotionBricks.wiki: who we are and how we fact-check | MotionBricks.wiki"
+  description="MotionBricks.wiki is an independent community guide to NVIDIA MotionBricks — how it verifies every claim, its update policy, and the 5,000 FPS correction it published."
+  path="/about/"
+  crumbs={[{ label: "About", href: "/about/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">About this site</p>
+      <h1>An independent guide to MotionBricks — <span style="color:var(--accent)">and the rules it holds itself to</span></h1>
+      <p class="lede">MotionBricks.wiki is a community-written documentation site for NVIDIA's MotionBricks motion framework. We are not NVIDIA, we do not speak for the researchers who built it, and we are not in a position to answer questions about it on their behalf. What we do instead: read the official materials closely and write the guide we wished existed.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Who makes this site</h2>
+    <p>This guide is maintained by independent developers who spent too long untangling MotionBricks install threads and decided to write it down once. Every page footer carries the affiliation statement in full: <em>unofficial community guide — not affiliated with, endorsed by, or sponsored by NVIDIA</em>. MotionBricks™ and NVIDIA® are trademarks of NVIDIA Corporation. Questions about the project itself belong to its authors — <a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a> — not to us.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Methodology: how we write</h2>
+    <ul>
+      <li><strong>Facts are limited to named sources.</strong> Every technical claim on this site traces to one of: the official project page, the MotionBricks README, the GR00T-WholeBodyControl parent README, the arXiv paper, or the BONES-SEED dataset pages. If a source does not say it, we do not say it — and when the sources are silent we mark the gap instead of filling it (the architecture page flags exactly one such gap).</li>
+      <li><strong>Commands are copied, never adjusted.</strong> Every install, clone and training command appears exactly as the README writes it — comment lines included. We do not claim to have re-run them on your hardware and do not silently "improve" them.</li>
+      <li><strong>Numbers come from official pages only.</strong> 15,000 FPS, 2 ms, 350,000+ clips, 142,220 clips, ~288 hours, ~2.2 GB of checkpoints, the 200/80/200 ms SONIC lookaheads. No invented star counts, parameter counts or benchmarks.</li>
+      <li><strong>We publish our corrections.</strong> Early community posts circulated a "5,000 FPS" figure that matches no official source: {CORRECTION_5K} That correction runs on every page where the stat appears, not hidden on an errata page.</li>
+      <li><strong>Media is linked, never mirrored.</strong> All GIFs and images on this site hotlink to NVIDIA-hosted files (media.githubusercontent.com and the project page). Nothing is re-hosted here.</li>
+    </ul>
+  </section>
+
+  <section class="block wrap">
+    <h2>Update policy</h2>
+    <p>The preview release is young and the official roadmap is moving — a full training pipeline inside the GEAR-SONIC stack is "targeted for approximately one month out" per the README, counted from the 2026-04-27 announcement and stated as the project's own estimate, not a promise we echo as a deadline. We update the guide when the repository actually ships something: each dated entry below is backed by a release or news item from the official channels, and the <a href="/news/">news page</a> tracks the same timeline as it grows. Where the roadmap slipped, we will say so rather than keep a stale date.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>What this site covers</h2>
+    <div class="grid">
+      <div class="card"><h3><a href="/setup/">Setup</a></h3><p>Clone, LFS, checkpoints, dependencies, first demo run.</p></div>
+      <div class="card"><h3><a href="/architecture/">Architecture</a></h3><p>The three-component backbone and the smart-primitive interface.</p></div>
+      <div class="card"><h3><a href="/training/">Training</a></h3><p>The three official training commands and dataset paths.</p></div>
+      <div class="card"><h3><a href="/styles/">Styles</a></h3><p>All 11 style keybinds with official GIFs and limits.</p></div>
+      <div class="card"><h3><a href="/nvidia/">NVIDIA overview</a></h3><p>What NVIDIA released, where, and under which license.</p></div>
+      <div class="card"><h3><a href="/community/">Community</a></h3><p>Where the discussion actually happens.</p></div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Covered timeline (sourced)</h2>
+    <ul>
+      {NEWS_TIMELINE.map(([d, e]) => <li><span class="tag">{d}</span> {e}</li>)}
+    </ul>
+    <p class="note">First entry from the MotionBricks README News section; the rest from GR00T-WholeBodyControl release notes. See <a href="/news/">news</a> for links.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Contact</h2>
+    <p>Found a broken link, a stale claim, or a source we should add? Reach the maintainers of <em>this site</em> at <a href="mailto:hello@motionbricks.wiki">hello@motionbricks.wiki</a> — this is the guide's own address, not an NVIDIA contact, and it is not a support channel for MotionBricks bugs. For those, use the official repository and <a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a>. We read everything and correct what we get wrong.</p>
+  </section>
+</Base>

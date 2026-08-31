@@ -1,0 +1,36 @@
+---
+// FAQ block: renders visible Q&A and emits matching FAQPage JSON-LD.
+interface Item { q: string; a: string; }
+export interface Props { items: Item[]; title?: string; }
+const { items, title = "Frequently asked questions" } = Astro.props;
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: items.map((i) => ({
+    "@type": "Question",
+    name: i.q,
+    acceptedAnswer: { "@type": "Answer", text: i.a.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() },
+  })),
+};
+---
+<section id="faq" class="block">
+  <h2>{title}</h2>
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+  {items.map((i) => (
+    <details class="faq-item" open={false}>
+      <summary set:html={i.q} />
+      <div class="faq-a" set:html={i.a} />
+    </details>
+  ))}
+</section>
+<style>
+  .faq-item { border: 1px solid var(--line); border-radius: 10px; background: var(--bg-soft); margin: 10px 0; }
+  .faq-item summary { cursor: pointer; padding: 14px 18px; font-weight: 700; color: var(--ink); list-style: none; }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::before { content: "+"; color: var(--accent); font-weight: 800; margin-right: 10px; }
+  .faq-item[open] summary::before { content: "−"; }
+  .faq-item:hover summary { color: var(--accent); }
+  .faq-a { padding: 0 18px 16px 18px; color: var(--ink-2); font-size: .95rem; }
+  .faq-a :global(code) { color: #cfe3b8; }
+  .faq-a :global(p) { color: var(--ink-2); }
+</style>

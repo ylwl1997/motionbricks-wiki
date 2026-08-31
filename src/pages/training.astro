@@ -1,0 +1,70 @@
+---
+import Base from "../layouts/Base.astro";
+import { OFFICIAL, RELATED } from "../data/site.js";
+---
+<Base
+  title="Training MotionBricks: commands, datasets, and release status | MotionBricks.wiki"
+  description="Train MotionBricks: the three official commands for the VQVAE, pose and root models, synthetic-data defaults for pipeline checks, real BONES-SEED datasets, and roadmap status."
+  path="/training/"
+  crumbs={[{ label: "Training", href: "/training/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Guide · commands verbatim from the official README</p>
+      <h1>Training MotionBricks: <span style="color:var(--accent)">three scripts, one pipeline you can verify today</span></h1>
+      <p class="lede">The preview release ships training code for all three model components — VQVAE tokenizer, pose model and root model — and defaults to synthetic data so you can run the whole loop end-to-end before touching the real dataset. Commands below are copied exactly from the README; we did not rewrite or re-test them.</p>
+      <p style="margin-top:20px"><a class="btn" href="/setup/">Finish setup first — the training guide assumes a working environment</a></p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>The three training commands</h2>
+    <p>Run from the <code>motionbricks/</code> directory of your clone. The README notes the scripts "use synthetic data by default and load model configs from the saved checkpoints in <code>out/</code>":</p>
+    <pre class="code-block"><code># Train the VQVAE (motion tokenizer)
+python scripts/train_vqvae.py
+
+# Train the pose model (requires pretrained VQVAE checkpoint)
+python scripts/train_pose.py
+
+# Train the root model (no VQVAE needed)
+python scripts/train_root.py</code></pre>
+    <p>Order matters once: the pose script needs a VQVAE checkpoint (pretrained in <code>out/</code>, or one you just trained), while the root model trains independently — the README comments say so in as many words. Which component each script corresponds to is covered on the <a href="/architecture/">architecture page</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Synthetic data: verify the pipeline first</h2>
+    <p>All current training scripts default to <strong>synthetic data</strong> (see <code>motionbricks/data/synthetic_dataset.py</code>) "so that the full training pipeline can be verified end-to-end without the real dataset" (README). Practical reading:</p>
+    <ul>
+      <li>You can confirm your environment, configs and the training loop produce checkpoints <em>without</em> downloading anything from BONES-SEED.</li>
+      <li>Synthetic runs validate plumbing, not quality — a completed synthetic training run tells you the code works on your CUDA box, nothing about motion fidelity.</li>
+      <li>Reproducibility experiments on the real-data path "are already in flight" per the README.</li>
+    </ul>
+  </section>
+
+  <section class="block wrap">
+    <h2>The real datasets</h2>
+    <p>The README states the datasets used to train the pretrained checkpoints can be downloaded at <a href={RELATED.bonesDatasets} rel="noopener">bones.studio/datasets</a> — that is where the full motion datasets live. The training corpus behind the released model is BONES-SEED (details and number caveats on the <a href="/assets/">assets page</a>).</p>
+    <p>If you want a lighter reference before committing bandwidth, the checkpoint sizes (~2.2 GB total across four files) are listed in the <a href="/setup/">setup guide</a>.</p>
+  </section>
+
+  <section class="block wrap">
+    <h2>Your own data or a new robot</h2>
+    <p>Two official docs in the repo handle the customization questions this guide deliberately does not invent answers for:</p>
+    <div class="grid">
+      <div class="card">
+        <h3><a href={OFFICIAL.motionReprDocs} rel="noopener">Motion representation docs</a></h3>
+        <p>"Details on the motion feature representation, skeleton system, coordinate conventions, normalization, and feature computation pipeline" (README description of <code>docs/motion_representation.md</code>).</p>
+      </div>
+      <div class="card">
+        <h3><a href={OFFICIAL.customDatasetDocs} rel="noopener">Adding your own dataset</a></h3>
+        <p>"A step-by-step guide to training MotionBricks on your own motion data and adapting it to a new robot" (README description of <code>docs/adding_your_own_dataset.md</code>).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Full release status — what the roadmap actually says</h2>
+    <p>The remaining piece is the complete pipeline integrated with robotics. Quoting the README's roadmap entry verbatim:</p>
+    <div class="warn">&quot;Full training pipeline inside <a href={RELATED.sonicRepo} rel="noopener">GR00T Whole-Body Control</a>&#39;s GEAR-SONIC pipeline — targeted for approximately one month out; reproducibility experiments are already in flight.&quot;</div>
+    <p>Two clarifications this guide insists on: "approximately one month out" is counted from the 2026-04-27 preview announcement, and it is the official roadmap's <em>estimate</em>, not a release commitment — treat any specific date you see quoted elsewhere as somebody's guess. Track the real status on the <a href="/news/">news page</a> and the <a href={OFFICIAL.repo} rel="noopener">official repository</a>; where the training pipeline meets SONIC deployment is mapped on the <a href="/gr00t-sonic/">GR00T-SONIC page</a>.</p>
+  </section>
+</Base>

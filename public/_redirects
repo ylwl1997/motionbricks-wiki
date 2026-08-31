@@ -1,0 +1,2 @@
+# www → apex, 301 permanent
+https://www.motionbricks.wiki/* https://motionbricks.wiki/:splat 301

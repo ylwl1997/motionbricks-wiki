@@ -1,0 +1,52 @@
+---
+export const title = "Mapping NVIDIA's humanoid motion stack: where MotionBricks actually sits — MotionBricks.wiki";
+export const description = "MotionBricks, GEAR-SONIC, BONES-SEED, SOMA Retargeter, Kimodo — six pieces that keep getting collapsed into one. A source-linked map of NVIDIA's GR00T whole-body-control effort and what each layer does.";
+const slug = "nvidias-humanoid-motion-stack";
+import Base from "../../layouts/Base.astro";
+import { OFFICIAL, RELATED, GIFS, SONIC_MODELS, SONIC_COMMON, SONIC_CAVEAT, NEWS_TIMELINE } from "../../data/site.js";
+---
+<Base title={title} description={description} path={`/blog/${slug}/`}
+  crumbs={[{ label: "News", href: "/news/" }, { label: "The motion stack", href: `/blog/${slug}/` }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Landscape · GR00T Whole-Body Control</p>
+      <h1>NVIDIA's humanoid motion stack, <span style="color:var(--accent)">piece by piece</span></h1>
+      <p class="lede">MotionBricks does not live alone, which is why coverage keeps mangling it. The <a href={OFFICIAL.parentRepo} rel="noopener">GR00T Whole-Body Control</a> effort is a set of layers — generation, control, data, retargeting — each with its own repo or page. Here is the map, with every box linked to where NVIDIA itself describes it.</p>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>The layers</h2>
+    <ul>
+      <li><strong>MotionBricks — motion generation.</strong> The real-time runtime described on the <a href={OFFICIAL.projectPage} rel="noopener">project page</a>; the README calls it, with GEAR-SONIC, one of the two projects that “anchor” the GR00T WBC initiative — the generation layer producing motion frames from commands.</li>
+      <li><strong>GEAR-SONIC — whole-body control.</strong> The controller layer, documented on its <a href={RELATED.sonicPage} rel="noopener">project page</a> and in the same monorepo as MotionBricks (<a href={RELATED.sonicRepo} rel="noopener">GitHub</a>): it consumes reference motion and executes it on the robot at 50 Hz. Details on the three checkpoints below.</li>
+      <li><strong>GR00T N1.5 / N1.6 decoupled WBC.</strong> NVIDIA's GR00T N-series model line pairs with decoupled whole-body control work in the same ecosystem; this post only names the placement — see the <a href={RELATED.sonicRepo} rel="noopener">GR00T-WBC repository</a> for what is currently published there rather than a third-party summary.</li>
+      <li><strong>BONES-SEED — the data.</strong> The training corpus behind the 350,000-clip claim: <a href={RELATED.bonesDatasets} rel="noopener">bones.studio/datasets</a> as the README points, with the <a href={RELATED.bonesSeed} rel="noopener">dataset page on Hugging Face</a>. Walkthrough in our <a href="/blog/bones-seed-dataset/">download post</a>.</li>
+      <li><strong>SOMA Retargeter — the conversion pipe.</strong> A Newton-based solver that retargets SOMA capture onto the Unitree G1, producing training data for MotionBricks (<a href={RELATED.somaRetargeter} rel="noopener">GitHub</a>).</li>
+      <li><strong>Kimodo — the offline sibling.</strong> Per the README's Related Work section, “focused on offline motion generation, complementary to MotionBricks' real-time runtime” (<a href={RELATED.kimodoPage} rel="noopener">project page</a>, <a href={RELATED.kimodoRepo} rel="noopener">repo</a>).</li>
+    </ul>
+    <div class="gifgrid">
+      <figure><img src={GIFS.teaserRobotics} alt="MotionBricks robotics teaser: generated motion on the Unitree G1" loading="lazy" width="640" height="360" /><figcaption>Generation layer — MotionBricks on G1.</figcaption></figure>
+      <figure><img src={GIFS.sonicTeaser} alt="GEAR-SONIC teaser from the official README Related Work section" loading="lazy" width="640" height="360" /><figcaption>Control layer — GEAR-SONIC.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>SONIC's three checkpoints, straight from the model card</h2>
+    <p>{SONIC_COMMON}</p>
+    <table>
+      <thead><tr><th>Checkpoint</th><th>Reference lookahead</th><th>Intended use</th></tr></thead>
+      <tbody>{SONIC_MODELS.map((m) => <tr><td><strong>{m.name}</strong>{m.link && <> · <a href={m.link} rel="noopener">files</a></>}</td><td>{m.lookahead}</td><td>{m.use}</td></tr>)}</tbody>
+    </table>
+    <div class="warn">{SONIC_CAVEAT}</div>
+  </section>
+
+  <section class="block wrap">
+    <h2>Release timeline</h2>
+    <table>
+      <thead><tr><th>Date</th><th>What shipped</th></tr></thead>
+      <tbody>{NEWS_TIMELINE.map(([d, e]) => <tr><td>{d}</td><td>{e}</td></tr>)}</tbody>
+    </table>
+    <p>Pattern worth noticing: the dates interleave. MotionBricks' preview (2026-04-27) came first in this window; the WBC repo answered with the VLA workflow, the low-latency checkpoint, and v1.1. The stack moves as a stack — which is precisely why the generation layer alone will not drive your robot. For the runtime piece in isolation, see the <a href="/setup/">installation guide</a>, and keep up with <a href="/">the guides indexed here</a> as layers change.</p>
+  </section>
+</Base>

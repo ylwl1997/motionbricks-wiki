@@ -1,0 +1,120 @@
+---
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import { OFFICIAL, CHECKPOINTS, KNOWN_ISSUES } from "../data/site.js";
+const faqItems = [
+  { q: "How to set up Motion Bricks (NVIDIA) step by step?", a: "Install Git LFS, clone the GR00T-WholeBodyControl monorepo, pull the MotionBricks checkpoints explicitly with git lfs pull (the parent repo skips them by default), create a Python 3.10 conda environment, pip install -e . inside motionbricks/, then run the interactive G1 demo script. The full copy-paste commands are above on this page." },
+  { q: "Does MotionBricks need a GPU?", a: "Yes — a CUDA-capable GPU is a stated requirement in the official README, along with Python 3.10 and Git LFS. A CPU-only machine can read and build the repo but cannot run the interactive demo as documented." },
+  { q: "Why are my checkpoint files only 1 KB?", a: "They are Git LFS pointer files, not the real weights — the classic trap because the parent monorepo intentionally skips MotionBricks checkpoints during a normal clone to avoid the ~2.2 GB download. From the repo root run: git lfs pull --include=\"motionbricks/out/**\" --exclude=\"\" and verify sizes again with ls -lh." },
+  { q: "How much disk space does the full MotionBricks demo need?", a: "About 2.2 GB of checkpoints (VQVAE ~273 MB, pose ~1.6 GB, root ~391 MB, G1-clip ~7.5 MB) plus the repository itself with LFS-tracked GIFs and mesh assets. Budget roughly 5 GB of working space." },
+  { q: "Can I run the demo on Windows?", a: "The keyboard key-grab workaround is Linux/X11-only, so on Windows (and macOS/Wayland) some MuJoCo shortcuts may conflict with controller keys. The official workaround: keep the terminal focused instead of the MuJoCo window, and install the keyboard Python package (used on Windows in place of pynput)." },
+  { q: "MotionBricks demo download — is there a standalone installer?", a: "No standalone installer exists. The official distribution is the GitHub repository with Git LFS assets; anything packaged elsewhere is unofficial. Follow the clone-and-lfs-pull commands on this page." },
+];
+---
+<Base
+  title="How to Set Up Motion Bricks (NVIDIA) — clone, checkpoints, LFS fixes | MotionBricks.wiki"
+  description="Step-by-step NVIDIA MotionBricks setup: git clone with Git LFS, pull the ~2.2 GB checkpoints, fix 1 KB LFS pointer files, install Python 3.10 dependencies, and launch the interactive G1 demo. Commands verbatim from the official README."
+  path="/setup/"
+  crumbs={[{ label: "Setup", href: "/setup/" }]}>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Guide · verified against the official README</p>
+      <h1>How to set up MotionBricks: <span style="color:var(--accent)">clone, checkpoints, first demo</span></h1>
+      <p class="lede">Nine commands from an empty folder to a keyboard-driven G1 humanoid — with the two traps that bite almost everyone: the skipped-LFS checkpoints and the 1 KB pointer files. Every command below is copied verbatim from the <a href={OFFICIAL.repo} rel="noopener">official README</a>; only the order of explanation differs.</p>
+    </div>
+  </section>
+
+  <div class="wrap with-toc" style="padding-top:26px">
+    <nav class="toc" aria-label="On this page">
+      <p class="tt">On this page</p>
+      <a href="#requirements">Requirements</a>
+      <a href="#clone">Clone with LFS</a>
+      <a href="#checkpoints">Pull checkpoints</a>
+      <a href="#verify">Verify file sizes</a>
+      <a href="#deps">Install dependencies</a>
+      <a href="#run">Run the demo</a>
+      <a href="#known">Known issues</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div>
+      <section id="requirements" class="block">
+        <h2>Requirements</h2>
+        <ul>
+          <li><strong>Python 3.10+</strong></li>
+          <li><strong>A CUDA-capable GPU</strong></li>
+          <li><strong><a href="https://git-lfs.com/" rel="noopener">Git LFS</a></strong> — checkpoints, meshes and gallery GIFs are LFS-tracked</li>
+        </ul>
+        <p>MotionBricks ships as a subproject of <a href={OFFICIAL.parentRepo} rel="noopener">GR00T-WholeBodyControl</a>: you clone the parent monorepo and work inside <code>motionbricks/</code>.</p>
+      </section>
+
+      <section id="clone" class="block">
+        <h2>1 · Clone the repository</h2>
+        <pre class="code-block"><code>git lfs install</code></pre>
+        <p>The parent repo <strong>skips MotionBricks pretrained checkpoints by default</strong> so a normal monorepo clone does not automatically download the extra ~2.2 GB. Source-only clone (fine if you just want the code):</p>
+        <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl/motionbricks</code></pre>
+      </section>
+
+      <section id="checkpoints" class="block">
+        <h2>2 · Pull the checkpoints explicitly</h2>
+        <p>For the interactive demo you need the weights <em>and</em> the G1 meshes. From the repo root:</p>
+        <pre class="code-block"><code>git clone https://github.com/NVlabs/GR00T-WholeBodyControl.git
+cd GR00T-WholeBodyControl
+git lfs pull --include="motionbricks/out/**" --exclude=""
+git lfs pull --include="motionbricks/assets/skeletons/g1/meshes/**" --exclude=""  # needed for interactive demo
+cd motionbricks</code></pre>
+      </section>
+
+      <section id="verify" class="block">
+        <h2>3 · Verify the files actually downloaded</h2>
+        <p>This is the step people skip and then spend an hour debugging. Checkpoint files must have real sizes:</p>
+        <pre class="code-block"><code>ls -lh out/G1-clip.ckpt                                     # ~7.5 MB
+ls -lh out/motionbricks_vqvae/version_1/checkpoints/*.ckpt  # ~273 MB
+ls -lh out/motionbricks_pose/version_1/checkpoints/*.ckpt   # ~1.6 GB
+ls -lh out/motionbricks_root/version_1/checkpoints/*.ckpt   # ~391 MB</code></pre>
+        <div class="warn">
+          <strong>If a checkpoint is ~1 KB, it is a Git LFS pointer, not the model.</strong>
+          <p style="margin-top:6px">From the repo root, fetch the real bytes and re-check:</p>
+          <pre class="code-block"><code>git lfs pull --include="motionbricks/out/**" --exclude=""</code></pre>
+          <p>Quick sanity check on a suspect file: <code>head -c 60 out/motionbricks_pose/version_1/checkpoints/&lt;file&gt;.ckpt</code> — a real checkpoint starts with binary data; a pointer file starts with <code>version https://git-lfs.github.com/spec/v1</code>.</p>
+        </div>
+        <table>
+          <caption style="text-align:left;color:var(--ink-2);font-size:13px;padding-bottom:6px">Checkpoint inventory (official sizes)</caption>
+          <thead><tr><th>File</th><th>Expected size</th></tr></thead>
+          <tbody>{CHECKPOINTS.map((c) => <tr><td><code>{c.path}</code></td><td>{c.size}</td></tr>)}</tbody>
+        </table>
+      </section>
+
+      <section id="deps" class="block">
+        <h2>4 · Install dependencies</h2>
+        <pre class="code-block"><code># Create environment
+conda create -n motionbricks python=3.10 -y
+conda activate motionbricks
+
+# Install dependencies
+pip install -e .
+
+# Linux only: needed for keyboard input and MuJoCo key-grab workaround
+pip install pynput python-xlib</code></pre>
+      </section>
+
+      <section id="run" class="block">
+        <h2>5 · Run the interactive G1 demo</h2>
+        <pre class="code-block"><code>DISPLAY=:1 python scripts/interactive_demo_g1.py</code></pre>
+        <p>This launches the MuJoCo viewer with the G1 robot; drive it live from the keyboard, and hold the left mouse button to orbit the look-at direction. The <code>DISPLAY=:1</code> prefix assumes an X11 session on GPU 1's display — drop or adjust it for your setup. Full key table and camera behavior: <a href="/g1-demo/">G1 demo guide</a>.</p>
+      </section>
+
+      <section id="known" class="block">
+        <h2>Known issues (verbatim from the README)</h2>
+        <ul>
+          {KNOWN_ISSUES.map((k) => <li><strong>{k.t}:</strong> {k.d}</li>)}
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <Faq items={faqItems} title="Setup FAQ" />
+  </div>
+</Base>
