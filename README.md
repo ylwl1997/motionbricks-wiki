@@ -20,7 +20,7 @@ python3 scripts/gen-sitemap.py   # writes dist/sitemap.xml (run after build, CI 
 Build must pass locally before push (the deploy workflow runs gen-sitemap → astro build → wrangler pages deploy).
 
 ## Structure
-- `src/layouts/Base.astro` — SEO head, hreflang, breadcrumb, nav, GA4 placeholder (`G-XXXXXXXXXX`), legal footer
+- `src/layouts/Base.astro` — SEO head, hreflang, breadcrumb, nav, GA4 (G-T9W89LYVR5), legal footer
 - `src/components/Faq.astro` — visible Q&A + matching FAQPage JSON-LD
 - `src/data/site.js` — single source of truth
 - `public/_redirects` — www → apex 301; `public/robots.txt` + generated `sitemap.xml`
