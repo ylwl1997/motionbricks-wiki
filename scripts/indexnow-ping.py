@@ -14,7 +14,7 @@ import urllib.request
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SITEMAP = os.path.join(ROOT, "dist", "sitemap.xml")
 HOST = "motionbricks.wiki"
-KEY = "1f44237ba6bcf3660d85152d218159b9"
+KEY = "9a1258b96e6560946a5202d12317305a"
 ENDPOINT = "https://api.indexnow.org/indexnow"
 MAX_BATCH = 10000
 
