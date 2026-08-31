@@ -27,6 +27,9 @@ jobs:
       - name: Generate sitemap (after build, dist/ exists)
         run: python3 scripts/gen-sitemap.py
 
+      - name: Ping IndexNow (push sitemap URLs to Bing et al.)
+        run: python3 scripts/indexnow-ping.py
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
