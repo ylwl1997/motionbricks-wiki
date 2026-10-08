@@ -39,7 +39,7 @@ for dirpath, dirnames, filenames in os.walk(DIST):
         continue
     rel = os.path.relpath(dirpath, DIST).replace("\\", "/")
     path = "/" if rel == "." else "/" + rel.strip("/") + "/"
-    if path == "/404/":
+    if path in ("/404/", "/zh/404/"):
         continue
     urls.append(path)
 urls.sort()

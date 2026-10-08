@@ -13,8 +13,35 @@ const {
   ogImage = "https://nvlabs.github.io/motionbricks/static/images/teaser_image_motionbricks.jpg",
 } = Astro.props;
 // For a zh page, the EN path is "/zh/<path>"; pass path as the EN route key and compute below.
-const canonPath = lang === "zh" ? `/zh${path === "/" ? "" : path}` : (lang === "es" ? "/es/" : lang === "ja" ? "/ja/" : path);
-const canon = `https://motionbricks.wiki${canonPath}`;
+const SITE = "https://motionbricks.wiki";
+const zhPath = (p: string) => (p === "/" ? "/zh/" : `/zh${p}`);
+const canonPath = lang === "zh" ? zhPath(path) : (lang === "es" ? "/es/" : lang === "ja" ? "/ja/" : path);
+const canon = `${SITE}${canonPath}`;
+
+// hreflang: only declare alternates between pages that really exist as translations.
+// /es/ and /ja/ are standalone translations of the home page only; every other page
+// exists in EN (root) and, where a file exists under src/pages/zh/, in ZH.
+// Route key = the EN path of this page's translation cluster.
+const routeKey = (lang === "es" || lang === "ja") ? "/" : path;
+const zhRoutes = new Set(
+  Object.keys(import.meta.glob("/src/pages/zh/**/*.astro")).map((f) => {
+    const r = f.replace(/^\/src\/pages\/zh\//, "").replace(/\.astro$/, "");
+    return r === "index" ? "/" : `/${r.replace(/\/index$/, "")}/`;
+  })
+);
+const isErrorPage = path === "/404/";
+const alternates: { hreflang: string; href: string }[] = [];
+if (!isErrorPage) {
+  alternates.push({ hreflang: "en", href: `${SITE}${routeKey}` });
+  if (routeKey === "/") {
+    alternates.push({ hreflang: "es", href: `${SITE}/es/` });
+    alternates.push({ hreflang: "ja", href: `${SITE}/ja/` });
+  }
+  if (zhRoutes.has(routeKey)) alternates.push({ hreflang: "zh", href: `${SITE}${zhPath(routeKey)}` });
+  // A page with no translation gets no hreflang at all.
+  if (alternates.length > 1) alternates.push({ hreflang: "x-default", href: `${SITE}${routeKey}` });
+  else alternates.length = 0;
+}
 
 // Language-aware labels
 const L = lang === "zh" ? {
@@ -58,8 +85,8 @@ const nav = [
 const langMap = { en: "/", es: "/es/", ja: "/ja/", zh: "/zh/" };
 const langLabels = { en: "English", es: "Español", ja: "日本語", zh: "中文" };
 const basePathForLang = (l: string) => (
-  l === "en" ? path
-  : l === "zh" ? (path === "/" ? "/zh/" : `/zh${path}`)
+  l === "en" ? routeKey
+  : l === "zh" ? (zhRoutes.has(routeKey) ? zhPath(routeKey) : "/zh/")
   : l === "es" ? "/es/" : "/ja/"
 );
 ---
@@ -71,11 +98,8 @@ const basePathForLang = (l: string) => (
   <title>{title}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={canon} />
-  <link rel="alternate" hreflang="en" href={`https://motionbricks.wiki${path}`} />
-  <link rel="alternate" hreflang="es" href="https://motionbricks.wiki/es/" />
-  <link rel="alternate" hreflang="ja" href="https://motionbricks.wiki/ja/" />
-  <link rel="alternate" hreflang="zh" href={`https://motionbricks.wiki/zh${path === "/" ? "" : path}`} />
-  <link rel="alternate" hreflang="x-default" href="https://motionbricks.wiki/" />
+  {isErrorPage && <meta name="robots" content="noindex" />}
+  {alternates.map((a) => <link rel="alternate" hreflang={a.hreflang} href={a.href} />)}
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <meta property="og:url" content={canon} />
