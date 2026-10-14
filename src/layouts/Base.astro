@@ -14,22 +14,44 @@ const {
 } = Astro.props;
 // For a zh page, the EN path is "/zh/<path>"; pass path as the EN route key and compute below.
 const SITE = "https://motionbricks.wiki";
-const zhPath = (p: string) => (p === "/" ? "/zh/" : `/zh${p}`);
-// Root 404.html is served at /404 (no trailing slash); keep zh 404 at /zh/404/.
+
+// Final 200 URLs only (Cloudflare Pages 308s bare /zh → /zh/).
+// Never emit /zh without slash, /zh/es/, or /zh/ja/.
+const withSlash = (p: string) => {
+  if (!p || p === "/") return "/";
+  return p.endsWith("/") ? p : `${p}/`;
+};
+/** Map an EN route key to the zh mirror URL that returns 200. */
+const zhPath = (enRoute: string): string => {
+  let key = enRoute || "/";
+  // Locale home stubs are not EN content routes — zh home is the alternate.
+  if (key === "/es" || key === "/es/" || key === "/ja" || key === "/ja/") return "/zh/";
+  // Strip accidental /zh prefix if a caller passed a zh path as the route key.
+  if (key === "/zh" || key === "/zh/") return "/zh/";
+  if (key.startsWith("/zh/")) key = key.slice(3) || "/";
+  key = withSlash(key);
+  if (key === "/es/" || key === "/ja/") return "/zh/";
+  return key === "/" ? "/zh/" : `/zh${key}`;
+};
+
+// Root 404.html is served at /404 (no trailing slash → 200); /404/ 308s to /404.
+// zh/404.astro is a normal page → /zh/404/ (trailing slash → 200).
 const en404Path = path === "/404/" || path === "/404";
 const canonPath = lang === "zh"
   ? (en404Path ? "/zh/404/" : zhPath(path))
   : lang === "es" ? "/es/"
   : lang === "ja" ? "/ja/"
   : en404Path ? "/404"
-  : path;
+  : withSlash(path);
 const canon = `${SITE}${canonPath}`;
 
 // hreflang: only declare alternates between pages that really exist as translations.
 // /es/ and /ja/ are standalone translations of the home page only; every other page
 // exists in EN (root) and, where a file exists under src/pages/zh/, in ZH.
-// Route key = the EN path of this page's translation cluster.
-const routeKey = (lang === "es" || lang === "ja") ? "/" : path;
+// Route key = the EN path of this page's translation cluster (never /es/ or /ja/).
+const routeKey = (lang === "es" || lang === "ja" || path === "/es/" || path === "/ja/" || path === "/es" || path === "/ja")
+  ? "/"
+  : en404Path ? "/404/" : withSlash(path);
 const zhRoutes = new Set(
   Object.keys(import.meta.glob("/src/pages/zh/**/*.astro")).map((f) => {
     const r = f.replace(/^\/src\/pages\/zh\//, "").replace(/\.astro$/, "");
@@ -41,15 +63,16 @@ const zhRoutes = new Set(
 const isErrorPage = path === "/404/" || path === "/404";
 const alternates: { hreflang: string; href: string }[] = [];
 if (!isErrorPage) {
-  // Always use trailing-slash targets so hreflang hrefs are 200 (not /zh → 308 /zh/).
-  alternates.push({ hreflang: "en", href: `${SITE}${routeKey}` });
+  const enHref = routeKey === "/" ? `${SITE}/` : `${SITE}${routeKey}`;
+  // Always trailing-slash hreflang targets (200), never bare /zh (308).
+  alternates.push({ hreflang: "en", href: enHref });
   if (routeKey === "/") {
     alternates.push({ hreflang: "es", href: `${SITE}/es/` });
     alternates.push({ hreflang: "ja", href: `${SITE}/ja/` });
   }
   if (zhRoutes.has(routeKey)) alternates.push({ hreflang: "zh", href: `${SITE}${zhPath(routeKey)}` });
   // A page with no translation gets no hreflang at all.
-  if (alternates.length > 1) alternates.push({ hreflang: "x-default", href: `${SITE}${routeKey}` });
+  if (alternates.length > 1) alternates.push({ hreflang: "x-default", href: enHref });
   else alternates.length = 0;
 }
 
@@ -156,7 +179,7 @@ const basePathForLang = (l: string) => (
       <a class="logo" href={lang === "zh" ? "/zh/" : "/"}>Motion<span class="b">Bricks</span>.wiki{lang === "zh" ? " 中文" : ""}</a>
       <nav class="nav" aria-label="Main">
         {nav.map((n) => {
-          const href = lang === "zh" ? `/zh${n.href === "/" ? "" : n.href}` : n.href;
+          const href = lang === "zh" ? zhPath(n.href) : n.href;
           return <a href={href} aria-current={Astro.url.pathname === href ? "page" : undefined}>{n.label}</a>;
         })}
       </nav>
