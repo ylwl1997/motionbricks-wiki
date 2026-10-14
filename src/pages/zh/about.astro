@@ -1,5 +1,6 @@
 ---
 import Base from "../../layouts/Base.astro";
+import Email from "../../components/Email.astro";
 import { OFFICIAL, NEWS_TIMELINE, CORRECTION_5K } from "../../data/site.js";
 ---
 <Base
@@ -18,7 +19,7 @@ import { OFFICIAL, NEWS_TIMELINE, CORRECTION_5K } from "../../data/site.js";
 
   <section class="block wrap">
     <h2>谁在维护这个站</h2>
-    <p>本指南由几位独立开发者维护——他们在 MotionBricks 安装帖里绕了太久，决定一次性写下来。每个页面页脚都完整保留声明：<em>非官方社区指南——与 NVIDIA 无关联、未获 NVIDIA 背书或赞助</em>。MotionBricks™ 与 NVIDIA® 是 NVIDIA Corporation 的商标。关于项目本身的问题属于它的作者——<a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a>——不属于我们。</p>
+    <p>本指南由几位独立开发者维护——他们在 MotionBricks 安装帖里绕了太久，决定一次性写下来。每个页面页脚都完整保留声明：<em>非官方社区指南——与 NVIDIA 无关联、未获 NVIDIA 背书或赞助</em>。MotionBricks™ 与 NVIDIA® 是 NVIDIA Corporation 的商标。关于项目本身的问题属于它的作者——<Email address={OFFICIAL.contact} />——不属于我们。</p>
   </section>
 
   <section class="block wrap">
@@ -57,8 +58,8 @@ import { OFFICIAL, NEWS_TIMELINE, CORRECTION_5K } from "../../data/site.js";
     <p class="note">第一条来自 MotionBricks README 的 News 一节；其余来自 GR00T-WholeBodyControl 发布说明。链接见<a href="/zh/news/">新闻页</a>。</p>
   </section>
 
-  <section class="block wrap">
+  <section class="block wrap" id="contact">
     <h2>联系</h2>
-    <p>发现死链、过期说法或该补的来源？联系<em>本站</em>的维护者：<a href="mailto:hello@motionbricks.wiki">hello@motionbricks.wiki</a>——这是指南自己的地址，不是 NVIDIA 联系方式，也不是 MotionBricks bug 的支持渠道。那些请用官方仓库与 <a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a>。我们每封都读，错了就改。</p>
+    <p>发现死链、过期说法或该补的来源？联系<em>本站</em>的维护者：<Email address="hello@motionbricks.wiki" />——这是指南自己的地址，不是 NVIDIA 联系方式，也不是 MotionBricks bug 的支持渠道。那些请用官方仓库与 <Email address={OFFICIAL.contact} />。我们每封都读，错了就改。</p>
   </section>
 </Base>

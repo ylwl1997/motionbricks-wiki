@@ -1,5 +1,6 @@
 ---
 import Base from "../../layouts/Base.astro";
+import Email from "../../components/Email.astro";
 import { OFFICIAL, RELATED } from "../../data/site.js";
 ---
 <Base
@@ -21,7 +22,7 @@ import { OFFICIAL, RELATED } from "../../data/site.js";
     <div class="grid">
       <div class="card">
         <h3>官方 NVIDIA 渠道</h3>
-        <p>MotionBricks README 为提问与反馈列了一个联系邮箱：<code>{OFFICIAL.contact}</code>。那是 NVIDIA 为这个项目设的官方地址——直接联系它，不要经过本站。</p>
+        <p>MotionBricks README 为提问与反馈列了一个联系邮箱：<Email address={OFFICIAL.contact} as="code" />。那是 NVIDIA 为这个项目设的官方地址——直接联系它，不要经过本站。</p>
       </div>
       <div class="card">
         <h3>GitHub issues 与 discussions</h3>
@@ -42,8 +43,8 @@ import { OFFICIAL, RELATED } from "../../data/site.js";
 
   <section class="block wrap" id="contribute">
     <h2>向本站贡献</h2>
-    <p>MotionBricks.wiki 是由一位编辑维护的非官方指南。要报告过期页面、死链，或与官方来源不符的事实，请发邮件到 <code>hello@motionbricks.wiki</code>。</p>
-    <div class="warn"><strong>写之前先读这条：</strong> <code>hello@motionbricks.wiki</code> 只是本站的联系地址。它<em>不是</em> NVIDIA 支持渠道，与 NVIDIA 没有任何关系——软件本身的问题请用 <code>{OFFICIAL.contact}</code> 或 GitHub。（与<a href="/zh/about/">关于页</a>同一条政策。）</div>
+    <p>MotionBricks.wiki 是由一位编辑维护的非官方指南。要报告过期页面、死链，或与官方来源不符的事实，请发邮件到 <Email address="hello@motionbricks.wiki" as="code" />。</p>
+    <div class="warn"><strong>写之前先读这条：</strong> <Email address="hello@motionbricks.wiki" as="code" /> 只是本站的联系地址。它<em>不是</em> NVIDIA 支持渠道，与 NVIDIA 没有任何关系——软件本身的问题请用 <Email address={OFFICIAL.contact} as="code" /> 或 GitHub。（与<a href="/zh/about/">关于页</a>同一条政策。）</div>
     <p>处理最快的三类：能推翻本站某条说法的官方来源链接、带确切命令和报错文本的可复现安装失败、两份 README 里任何新的带日期条目。</p>
   </section>
 

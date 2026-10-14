@@ -1,0 +1,20 @@
+---
+/**
+ * Renders an email so Cloudflare Email Obfuscation does not rewrite it to
+ * /cdn-cgi/l/email-protection (which Ahrefs crawls as a naked soft-404 href).
+ * Comments must be injected via set:html — Astro strips source <!-- --> comments.
+ */
+interface Props {
+  address: string;
+  /** "link" = mailto: anchor; "code" = <code> text only; "text" = plain text */
+  as?: "link" | "code" | "text";
+}
+const { address, as = "link" } = Astro.props;
+const inner =
+  as === "link"
+    ? `<a href="mailto:${address}">${address}</a>`
+    : as === "code"
+      ? `<code>${address}</code>`
+      : address;
+---
+<Fragment set:html={`<!--email_off-->${inner}<!--/email_off-->`} />
