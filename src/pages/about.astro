@@ -1,5 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
+import Email from "../components/Email.astro";
 import { OFFICIAL, NEWS_TIMELINE, CORRECTION_5K } from "../data/site.js";
 ---
 <Base
@@ -17,7 +18,7 @@ import { OFFICIAL, NEWS_TIMELINE, CORRECTION_5K } from "../data/site.js";
 
   <section class="block wrap">
     <h2>Who makes this site</h2>
-    <p>This guide is maintained by independent developers who spent too long untangling MotionBricks install threads and decided to write it down once. Every page footer carries the affiliation statement in full: <em>unofficial community guide — not affiliated with, endorsed by, or sponsored by NVIDIA</em>. MotionBricks™ and NVIDIA® are trademarks of NVIDIA Corporation. Questions about the project itself belong to its authors — <a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a> — not to us.</p>
+    <p>This guide is maintained by independent developers who spent too long untangling MotionBricks install threads and decided to write it down once. Every page footer carries the affiliation statement in full: <em>unofficial community guide — not affiliated with, endorsed by, or sponsored by NVIDIA</em>. MotionBricks™ and NVIDIA® are trademarks of NVIDIA Corporation. Questions about the project itself belong to its authors — <Email address={OFFICIAL.contact} /> — not to us.</p>
   </section>
 
   <section class="block wrap">
@@ -56,8 +57,8 @@ import { OFFICIAL, NEWS_TIMELINE, CORRECTION_5K } from "../data/site.js";
     <p class="note">First entry from the MotionBricks README News section; the rest from GR00T-WholeBodyControl release notes. See <a href="/news/">news</a> for links.</p>
   </section>
 
-  <section class="block wrap">
+  <section class="block wrap" id="contact">
     <h2>Contact</h2>
-    <p>Found a broken link, a stale claim, or a source we should add? Reach the maintainers of <em>this site</em> at <a href="mailto:hello@motionbricks.wiki">hello@motionbricks.wiki</a> — this is the guide's own address, not an NVIDIA contact, and it is not a support channel for MotionBricks bugs. For those, use the official repository and <a href="mailto:{OFFICIAL.contact}">{OFFICIAL.contact}</a>. We read everything and correct what we get wrong.</p>
+    <p>Found a broken link, a stale claim, or a source we should add? Reach the maintainers of <em>this site</em> at <Email address="hello@motionbricks.wiki" /> — this is the guide's own address, not an NVIDIA contact, and it is not a support channel for MotionBricks bugs. For those, use the official repository and <Email address={OFFICIAL.contact} />. We read everything and correct what we get wrong.</p>
   </section>
 </Base>

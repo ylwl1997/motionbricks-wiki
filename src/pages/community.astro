@@ -1,5 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
+import Email from "../components/Email.astro";
 import { OFFICIAL, RELATED } from "../data/site.js";
 ---
 <Base
@@ -20,7 +21,7 @@ import { OFFICIAL, RELATED } from "../data/site.js";
     <div class="grid">
       <div class="card">
         <h3>Official NVIDIA channel</h3>
-        <p>The MotionBricks README lists one contact for questions and feedback: <code>{OFFICIAL.contact}</code>. That is NVIDIA's own address for the project — reach it directly, not through this site.</p>
+        <p>The MotionBricks README lists one contact for questions and feedback: <Email address={OFFICIAL.contact} as="code" />. That is NVIDIA's own address for the project — reach it directly, not through this site.</p>
       </div>
       <div class="card">
         <h3>GitHub issues &amp; discussions</h3>
@@ -41,8 +42,8 @@ import { OFFICIAL, RELATED } from "../data/site.js";
 
   <section class="block wrap" id="contribute">
     <h2>Contributing to this wiki</h2>
-    <p>MotionBricks.wiki is an unofficial guide maintained by one editor. To report a stale page, a dead link, or a fact that disagrees with an official source, email <code>hello@motionbricks.wiki</code>.</p>
-    <div class="warn"><strong>Read this before you write:</strong> <code>hello@motionbricks.wiki</code> is this site's contact address only. It is <em>not</em> a NVIDIA support channel and has no relationship to NVIDIA — for anything about the software itself, use <code>{OFFICIAL.contact}</code> or GitHub. (Same policy as the <a href="/about/">about page</a>.)</div>
+    <p>MotionBricks.wiki is an unofficial guide maintained by one editor. To report a stale page, a dead link, or a fact that disagrees with an official source, email <Email address="hello@motionbricks.wiki" as="code" />.</p>
+    <div class="warn"><strong>Read this before you write:</strong> <Email address="hello@motionbricks.wiki" as="code" /> is this site's contact address only. It is <em>not</em> a NVIDIA support channel and has no relationship to NVIDIA — for anything about the software itself, use <Email address={OFFICIAL.contact} as="code" /> or GitHub. (Same policy as the <a href="/about/">about page</a>.)</div>
     <p>What gets acted on fastest: a link to the official source that contradicts something here, a reproducible setup failure with the exact command and error text, or a new dated entry from either README.</p>
   </section>
 

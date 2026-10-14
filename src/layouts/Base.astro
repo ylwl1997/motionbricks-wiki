@@ -15,7 +15,14 @@ const {
 // For a zh page, the EN path is "/zh/<path>"; pass path as the EN route key and compute below.
 const SITE = "https://motionbricks.wiki";
 const zhPath = (p: string) => (p === "/" ? "/zh/" : `/zh${p}`);
-const canonPath = lang === "zh" ? zhPath(path) : (lang === "es" ? "/es/" : lang === "ja" ? "/ja/" : path);
+// Root 404.html is served at /404 (no trailing slash); keep zh 404 at /zh/404/.
+const en404Path = path === "/404/" || path === "/404";
+const canonPath = lang === "zh"
+  ? (en404Path ? "/zh/404/" : zhPath(path))
+  : lang === "es" ? "/es/"
+  : lang === "ja" ? "/ja/"
+  : en404Path ? "/404"
+  : path;
 const canon = `${SITE}${canonPath}`;
 
 // hreflang: only declare alternates between pages that really exist as translations.
@@ -29,9 +36,12 @@ const zhRoutes = new Set(
     return r === "index" ? "/" : `/${r.replace(/\/index$/, "")}/`;
   })
 );
-const isErrorPage = path === "/404/";
+// Astro emits root 404.astro as dist/404.html → live URL /404 (no trailing slash).
+// zh/404.astro is a normal page → /zh/404/. Never put 404 URLs in hreflang clusters.
+const isErrorPage = path === "/404/" || path === "/404";
 const alternates: { hreflang: string; href: string }[] = [];
 if (!isErrorPage) {
+  // Always use trailing-slash targets so hreflang hrefs are 200 (not /zh → 308 /zh/).
   alternates.push({ hreflang: "en", href: `${SITE}${routeKey}` });
   if (routeKey === "/") {
     alternates.push({ hreflang: "es", href: `${SITE}/es/` });
